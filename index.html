@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T.O.R.I — 順番待ち</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #08080A;
+    --bg-1: #0E1014;
+    --bg-2: #161820;
+    --bg-3: #1F222B;
+    --border: #2A2D34;
+    --border-bright: #3F434E;
+    --amber: #FFA31A;
+    --amber-bright: #FFD93D;
+    --amber-glow: rgba(255, 163, 26, 0.6);
+    --green: #4AE54A;
+    --green-glow: rgba(74, 229, 74, 0.55);
+    --red: #FF3838;
+    --red-glow: rgba(255, 56, 56, 0.6);
+    --text: #E8E6E0;
+    --text-dim: #888B91;
+    --text-mute: #555861;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: var(--bg-0);
+    color: var(--text);
+    font-family: 'DotGothic16', 'VT323', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    cursor: default;
+  }
+
+  /* ===== CRT screen effects ===== */
+  body::before {
+    /* Scanlines */
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.16) 0px,
+      rgba(0,0,0,0.16) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+    z-index: 9990;
+    mix-blend-mode: multiply;
+  }
+
+  body::after {
+    /* Vignette + faint glow */
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%),
+      radial-gradient(ellipse at 30% 20%, rgba(255,163,26,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(74,229,74,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 9991;
+  }
+
+  /* Noise overlay */
+  .noise {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9989;
+    opacity: 0.07;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.65'/></svg>");
+    animation: noiseShift 0.6s steps(3) infinite;
+  }
+  @keyframes noiseShift {
+    0%   { transform: translate(0,0); }
+    33%  { transform: translate(-2px, 1px); }
+    66%  { transform: translate(1px, -2px); }
+    100% { transform: translate(0,0); }
+  }
+
+  /* Random glitch flash (rare) */
+  .glitch-flash {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9992;
+    background: transparent;
+    animation: glitchFlash 11s steps(1) infinite;
+  }
+  @keyframes glitchFlash {
+    0%, 96%, 100% { background: transparent; }
+    96.3% { background: rgba(255,163,26,0.05); transform: translateX(2px); }
+    96.5% { background: transparent; transform: translateX(-3px); }
+    96.7% { background: rgba(74,229,74,0.04); transform: translateX(1px); }
+    96.9% { background: transparent; transform: translateX(0); }
+  }
+
+  /* ===== Page transition (glitch out) ===== */
+  .transition-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: var(--bg-0);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s steps(2);
+  }
+  .transition-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+    animation: transitionStatic 0.4s steps(8) forwards;
+  }
+  .transition-overlay::before {
+    content: 'TRANSMITTING...';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Press Start 2P', monospace;
+    color: var(--amber);
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    text-shadow: 2px 0 var(--red), -2px 0 var(--green);
+    animation: transmitGlitch 0.1s steps(2) infinite;
+  }
+  @keyframes transmitGlitch {
+    0%, 100% { transform: translate(-50%, -50%); }
+    50% { transform: translate(calc(-50% + 2px), -50%); }
+  }
+  @keyframes transitionStatic {
+    0%   { background: var(--bg-0); }
+    25%  { background: #FFA31A22; }
+    50%  { background: var(--bg-0); }
+    75%  { background: #4AE54A22; }
+    100% { background: var(--bg-0); }
+  }
+
+  /* ===== Page enter (boot up) ===== */
+  @keyframes bootIn {
+    0%   { opacity: 0; transform: translateY(4px) scaleY(0.4); filter: blur(2px); }
+    30%  { opacity: 1; transform: translateY(0) scaleY(1.05); filter: blur(0); }
+    50%  { transform: translateY(0) scaleY(0.97); }
+    100% { opacity: 1; transform: translateY(0) scaleY(1); filter: blur(0); }
+  }
+  @keyframes bootInFast {
+    0%   { opacity: 0; }
+    50%  { opacity: 0; }
+    51%  { opacity: 1; }
+    100% { opacity: 1; }
+  }
+
+  /* ===== Top status bar ===== */
+  .status-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    z-index: 100;
+    user-select: none;
+    animation: bootIn 0.5s steps(6) forwards;
+  }
+
+  .status-bar .item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .status-bar .led {
+    width: 8px; height: 8px;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green-glow);
+    animation: ledBlink 2s steps(2) infinite;
+  }
+  .status-bar .led.amber { background: var(--amber); box-shadow: 0 0 6px var(--amber-glow); }
+  @keyframes ledBlink {
+    0%, 80% { opacity: 1; }
+    81%, 100% { opacity: 0.55; }
+  }
+  .status-bar .text-green { color: var(--green); }
+  .status-bar .text-amber { color: var(--amber); }
+  .status-bar .spacer { flex: 1; }
+  .status-bar .lang-tag {
+    border: 1px solid var(--border-bright);
+    padding: 1px 8px;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.15s steps(2);
+  }
+  .status-bar .lang-tag:hover { background: var(--amber); color: var(--bg-0); border-color: var(--amber); }
+
+  @media (max-width: 540px) {
+    .status-bar { font-size: 14px; gap: 10px; padding: 7px 10px; }
+    .status-bar .hide-sm { display: none; }
+  }
+
+  /* ===== Main content ===== */
+  .main {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 60px 20px 40px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Boot log */
+  .boot-log {
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 24px;
+    min-height: 110px;
+  }
+  .boot-log .line { opacity: 0; display: block; }
+  .boot-log .line.show { animation: bootLine 0.05s steps(2) forwards; }
+  .boot-log .line .ok { color: var(--green); }
+  .boot-log .line .warn { color: var(--amber); }
+  .boot-log .line .err { color: var(--red); }
+  @keyframes bootLine {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+    animation: bootIn 0.7s steps(8) 0.2s both;
+  }
+
+  .header .small-tag {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    color: var(--amber);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(22px, 6vw, 36px);
+    color: var(--text);
+    line-height: 1.2;
+    letter-spacing: 0.04em;
+    margin-bottom: 14px;
+    text-shadow:
+      2px 0 var(--red-glow),
+      -2px 0 var(--green-glow);
+    animation: logoBuzz 4s steps(2) infinite;
+  }
+  @keyframes logoBuzz {
+    0%, 96%, 100% { text-shadow: 2px 0 var(--red-glow), -2px 0 var(--green-glow); }
+    96.5% { text-shadow: 4px 0 var(--red-glow), -4px 0 var(--green-glow); transform: translateX(1px); }
+    97% { text-shadow: -2px 0 var(--red-glow), 2px 0 var(--green-glow); }
+    97.5% { transform: translateX(-1px); }
+  }
+  .logo .dot {
+    color: var(--amber);
+    font-size: 0.85em;
+  }
+
+  .subtitle {
+    font-family: 'DotGothic16', monospace;
+    color: var(--text-dim);
+    font-size: 15px;
+    line-height: 1.7;
+    letter-spacing: 0.04em;
+  }
+
+  /* Panel */
+  .panel {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    margin-bottom: 14px;
+    position: relative;
+    animation: bootIn 0.6s steps(6) 0.35s both;
+  }
+  .panel-head {
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border);
+    padding: 7px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .panel-head::before {
+    content: '▸';
+    color: var(--amber);
+    margin-right: 8px;
+  }
+  .panel-head .led-row { display: flex; gap: 4px; }
+  .panel-head .pix {
+    width: 6px; height: 6px;
+    background: var(--border-bright);
+  }
+  .panel-head .pix.on { background: var(--amber); box-shadow: 0 0 4px var(--amber-glow); }
+
+  .panel-body { padding: 22px 18px 18px; }
+
+  /* Input field — terminal style */
+  .input-group { margin-bottom: 18px; }
+  .input-label {
+    display: block;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+    margin-bottom: 8px;
+  }
+  .input-label::before {
+    content: '> ';
+    color: var(--green);
+  }
+
+  .input-wrap {
+    display: flex;
+    align-items: center;
+    background: var(--bg-0);
+    border: 1px solid var(--border-bright);
+    transition: border-color 0.15s steps(2);
+  }
+  .input-wrap:focus-within {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 1px var(--amber-glow), inset 0 0 12px rgba(255, 163, 26, 0.08);
+  }
+  .input-wrap::before {
+    content: '$';
+    padding: 0 10px;
+    color: var(--green);
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+  }
+  input[type="text"] {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'DotGothic16', 'VT323', monospace;
+    font-size: 18px;
+    padding: 12px 12px 12px 0;
+    outline: none;
+    letter-spacing: 0.04em;
+    caret-color: var(--amber);
+  }
+  input[type="text"]::placeholder {
+    color: var(--text-mute);
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+  }
+
+  /* Buttons — pixel style */
+  .btn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  button, .btn-link {
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    border: none;
+    padding: 14px 12px;
+    transition: all 0.1s steps(2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    text-transform: uppercase;
+    line-height: 1.4;
+    position: relative;
+  }
+
+  .btn-primary {
+    background: var(--amber);
+    color: var(--bg-0);
+    grid-column: 1 / -1;
+    padding: 20px 14px;
+    font-size: 17px;
+    letter-spacing: 0.18em;
+    box-shadow:
+      0 0 0 2px var(--bg-0),
+      0 0 0 3px var(--amber),
+      0 0 20px rgba(255, 163, 26, 0.35);
+    position: relative;
+  }
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: var(--amber);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.15s steps(2);
+  }
+  .btn-primary:hover {
+    background: var(--amber-bright);
+    transform: translateY(-1px);
+    box-shadow:
+      0 0 0 2px var(--bg-0),
+      0 0 0 3px var(--amber-bright),
+      0 0 32px rgba(255, 217, 61, 0.55);
+  }
+  .btn-primary:active {
+    transform: translateY(1px);
+  }
+  .btn-primary .arrow {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    letter-spacing: 0;
+  }
+
+  .btn-secondary {
+    background: var(--bg-2);
+    color: var(--text);
+    border: 1px solid var(--border-bright);
+  }
+  .btn-secondary:hover {
+    background: var(--bg-3);
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .btn-message-only {
+    margin-top: 14px;
+    width: 100%;
+    background: transparent;
+    color: var(--green);
+    border: 1px dashed var(--green);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    padding: 13px 12px;
+  }
+  .btn-message-only:hover {
+    background: rgba(74, 229, 74, 0.08);
+    border-style: solid;
+  }
+  .btn-message-only::before {
+    content: '[ ✉ ]';
+    margin-right: 6px;
+    color: var(--green);
+    letter-spacing: 0;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translate(-50%, 80px);
+    background: var(--bg-0);
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    padding: 12px 22px;
+    font-family: 'DotGothic16', monospace;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    transition: transform 0.2s steps(4);
+    z-index: 9000;
+    box-shadow: 0 0 24px rgba(255, 163, 26, 0.35), 0 0 0 2px var(--bg-0);
+    white-space: nowrap;
+  }
+  .toast.show { transform: translate(-50%, 0); }
+  .toast.error { border-color: var(--red); color: var(--red); box-shadow: 0 0 24px rgba(255, 56, 56, 0.4), 0 0 0 2px var(--bg-0); }
+  .toast::before {
+    content: '►';
+    margin-right: 8px;
+    color: var(--green);
+  }
+  .toast.error::before { content: '✕'; color: var(--red); }
+
+  /* Queue panel (inline) */
+  .queue-panel { display: none; margin-top: 14px; animation: bootIn 0.4s steps(5) both; }
+  .queue-panel.visible { display: block; }
+  .queue-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    margin-bottom: 4px;
+    font-family: 'DotGothic16', monospace;
+    font-size: 15px;
+  }
+  .queue-item:first-child {
+    border-color: var(--amber);
+    background: rgba(255, 163, 26, 0.08);
+    box-shadow: inset 0 0 12px rgba(255, 163, 26, 0.08);
+  }
+  .queue-num {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    min-width: 32px;
+  }
+  .queue-item:first-child .queue-num { color: var(--amber); }
+  .queue-name { flex: 1; color: var(--text); }
+  .queue-item:first-child .queue-name::after {
+    content: ' ← NEXT';
+    color: var(--amber);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    margin-left: 6px;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 22px;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    color: var(--text-mute);
+  }
+
+  /* ===== MODAL — "INCOMING TRANSMISSION" ===== */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.78);
+    backdrop-filter: blur(3px);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s steps(2);
+  }
+  .modal-backdrop.show { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    background: var(--bg-1);
+    border: 2px solid var(--amber);
+    max-width: 420px;
+    width: 100%;
+    position: relative;
+    transform: translateY(10px) scale(0.97);
+    transition: transform 0.2s steps(4);
+    box-shadow:
+      0 0 0 4px var(--bg-0),
+      0 0 60px rgba(255, 163, 26, 0.4);
+  }
+  .modal-backdrop.show .modal { transform: translateY(0) scale(1); }
+
+  /* Flashing top bar */
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px;
+    height: 6px;
+    background: var(--amber);
+    animation: warnPulse 0.7s steps(2) infinite;
+  }
+  @keyframes warnPulse {
+    0%, 100% { background: var(--amber); box-shadow: 0 0 16px var(--amber-glow); }
+    50% { background: var(--red); box-shadow: 0 0 16px var(--red-glow); }
+  }
+
+  .modal-header {
+    background: var(--bg-2);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--amber);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .modal-header .blink {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--red);
+    box-shadow: 0 0 6px var(--red-glow);
+    animation: ledBlink 0.5s steps(2) infinite;
+  }
+
+  .modal-body {
+    padding: 28px 24px 22px;
+    text-align: center;
+  }
+
+  .modal-icon {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 38px;
+    color: var(--amber);
+    margin-bottom: 14px;
+    text-shadow: 0 0 16px var(--amber-glow);
+    animation: iconPulse 1.4s steps(2) infinite;
+  }
+  @keyframes iconPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .modal-title {
+    font-family: 'DotGothic16', monospace;
+    font-size: 16px;
+    color: var(--text);
+    line-height: 1.8;
+    margin-bottom: 8px;
+    letter-spacing: 0.04em;
+  }
+  .modal-title .name {
+    color: var(--amber);
+    background: rgba(255, 163, 26, 0.12);
+    padding: 0 6px;
+    text-shadow: 0 0 8px var(--amber-glow);
+  }
+
+  .modal-sub {
+    font-family: 'VT323', monospace;
+    font-size: 15px;
+    color: var(--text-dim);
+    margin-bottom: 22px;
+    letter-spacing: 0.06em;
+  }
+
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .modal-btn {
+    padding: 14px 12px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: all 0.1s steps(2);
+    border: none;
+    text-transform: uppercase;
+  }
+  .modal-btn-no {
+    background: var(--bg-2);
+    color: var(--text);
+    border: 1px solid var(--border-bright);
+  }
+  .modal-btn-no:hover { background: var(--bg-3); border-color: var(--text-dim); }
+  .modal-btn-yes {
+    background: var(--amber);
+    color: var(--bg-0);
+    box-shadow: 0 0 0 2px var(--bg-0), 0 0 0 3px var(--amber);
+  }
+  .modal-btn-yes:hover {
+    background: var(--amber-bright);
+    box-shadow: 0 0 0 2px var(--bg-0), 0 0 0 3px var(--amber-bright), 0 0 18px rgba(255, 217, 61, 0.45);
+  }
+
+  /* Credits */
+  .credits {
+    position: fixed;
+    bottom: 8px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'VT323', monospace;
+    font-size: 12px;
+    color: var(--text-mute);
+    letter-spacing: 0.18em;
+    pointer-events: none;
+    z-index: 50;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+<div class="glitch-flash"></div>
+<div class="transition-overlay" id="transitionOverlay"></div>
+
+<!-- Status bar -->
+<div class="status-bar">
+  <div class="item"><span class="led"></span> <span class="text-green">ONLINE</span></div>
+  <div class="item hide-sm">SYS://QUEUE_v4.0</div>
+  <div class="item hide-sm">NODE:<span class="text-amber">A7</span></div>
+  <div class="spacer"></div>
+  <div class="item"><span id="clockText">--:--:--</span></div>
+  <a href="index_en.html" class="lang-tag" onclick="return navTo(event, 'index_en.html')">[EN]</a>
+</div>
+
+<div class="main" style="padding-top:80px;">
+
+  <!-- Boot log -->
+  <div class="boot-log" id="bootLog">
+    <span class="line" data-delay="0">> booting T.O.R.I system...</span>
+    <span class="line" data-delay="80">> loading firmware......... <span class="ok">[OK]</span></span>
+    <span class="line" data-delay="160">> connecting to server....... <span class="ok">[OK]</span></span>
+    <span class="line" data-delay="240">> birthday_protocol........... <span class="warn">[ACTIVE]</span></span>
+    <span class="line" data-delay="320">> ready_</span>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="small-tag">BIRTHDAY COLLAB RESERVATION SYSTEM</div>
+    <div class="logo">T<span class="dot">.</span>O<span class="dot">.</span>R<span class="dot">.</span>I</div>
+    <p class="subtitle">お名前を入力して、順番待ちに<br>登録してください</p>
+  </div>
+
+  <!-- Main input panel -->
+  <div class="panel">
+    <div class="panel-head">
+      RESERVATION INPUT
+      <div class="led-row">
+        <span class="pix on"></span>
+        <span class="pix on"></span>
+        <span class="pix on"></span>
+        <span class="pix"></span>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="input-group">
+        <label class="input-label" for="nameInput">YOUR NAME (REALITY名)</label>
+        <div class="input-wrap">
+          <input type="text" id="nameInput" placeholder="例：とりひめ" maxlength="20" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="btn-grid">
+        <button class="btn-primary" onclick="onReserveClick()">
+          <span class="arrow">▶</span> 予約する
+        </button>
+        <button class="btn-secondary" onclick="toggleQueue()">[ QUEUE ]</button>
+        <button class="btn-secondary" onclick="navTo(event, 'display.html')">[ DISPLAY ]</button>
+      </div>
+
+      <button class="btn-message-only" onclick="goToMessageOnly()">予約せずにメッセージのみ送る</button>
+    </div>
+  </div>
+
+  <!-- Queue panel -->
+  <div class="queue-panel" id="queuePanel">
+    <div class="panel">
+      <div class="panel-head">
+        CURRENT QUEUE [<span id="countBadge">0</span>]
+        <div class="led-row">
+          <span class="pix on"></span><span class="pix"></span><span class="pix"></span>
+        </div>
+      </div>
+      <div id="queueList" style="padding:8px;"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- INCOMING TRANSMISSION Modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <span><span class="blink"></span>&nbsp;&nbsp;INCOMING TRANSMISSION</span>
+      <span style="color:var(--red);">! PRIORITY !</span>
+    </div>
+    <div class="modal-body">
+      <div class="modal-icon">★</div>
+      <div class="modal-title">
+        本日お誕生日の<br><span class="name">『とりひめさん』</span>に<br>こっそりメッセージを送りませんか？
+      </div>
+      <div class="modal-sub">// SECRET_CHANNEL_OPEN</div>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-no" onclick="onModalChoice(false)">[ チェキだけ ]</button>
+        <button class="modal-btn modal-btn-yes" onclick="onModalChoice(true)">[ 送ります ]</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="credits">▸▸▸ PRODUCED BY PENPEN ◂◂◂</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCLvalYsoPBnG40Ca7bpuIsUwNc7Qux9E",
+    authDomain: "queue-tori.firebaseapp.com",
+    projectId: "queue-tori",
+    storageBucket: "queue-tori.firebasestorage.app",
+    messagingSenderId: "608324516122",
+    appId: "1:608324516122:web:f1e511722e96945e9514a3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const queueRef = collection(db, 'queue');
+  let queueData = [];
+  let pendingName = null;
+
+  onSnapshot(query(queueRef, orderBy('order')), (snapshot) => {
+    queueData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderQueue();
+  });
+
+  // ===== Boot log sequence =====
+  document.querySelectorAll('.boot-log .line').forEach((line, i) => {
+    const delay = parseInt(line.dataset.delay || (i * 80), 10);
+    setTimeout(() => line.classList.add('show'), delay);
+  });
+
+  // ===== Clock =====
+  function tick() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('clockText').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+  setInterval(tick, 1000); tick();
+
+  // ===== Page transition =====
+  window.navTo = function(e, url) {
+    if (e) e.preventDefault();
+    const overlay = document.getElementById('transitionOverlay');
+    overlay.classList.add('active');
+    setTimeout(() => { window.location.href = url; }, 380);
+    return false;
+  };
+
+  window.onReserveClick = function() {
+    const input = document.getElementById('nameInput');
+    const name = input.value.trim();
+    if (!name) { showToast('お名前を入力してください', true); input.focus(); return; }
+    if (queueData.find(q => q.name === name)) { showToast(`「${name}」は登録済みです`, true); return; }
+    pendingName = name;
+    openModal();
+  };
+
+  window.openModal = function() { document.getElementById('modalBackdrop').classList.add('show'); };
+  window.closeModal = function() { document.getElementById('modalBackdrop').classList.remove('show'); };
+
+  window.onModalChoice = async function(wantsToSendMessage) {
+    closeModal();
+    if (!pendingName) return;
+    const name = pendingName;
+    pendingName = null;
+    try {
+      const maxOrder = queueData.length > 0 ? Math.max(...queueData.map(d => d.order)) : 0;
+      await addDoc(queueRef, { name, order: maxOrder + 1, createdAt: serverTimestamp() });
+      document.getElementById('nameInput').value = '';
+      document.getElementById('queuePanel').classList.add('visible');
+      if (wantsToSendMessage) {
+        const overlay = document.getElementById('transitionOverlay');
+        overlay.classList.add('active');
+        setTimeout(() => {
+          window.location.href = 'message.html?name=' + encodeURIComponent(name) + '&from=reserve';
+        }, 380);
+      } else {
+        showToast(`「${name}」を登録 [位置: ${queueData.length}]`);
+      }
+    } catch (err) { console.error(err); showToast('登録失敗 [ERR]', true); }
+  };
+
+  window.goToMessageOnly = function() {
+    const nameVal = (document.getElementById('nameInput').value || '').trim();
+    const param = nameVal ? '?name=' + encodeURIComponent(nameVal) : '';
+    navTo(null, 'message.html' + param);
+  };
+
+  window.toggleQueue = function() { document.getElementById('queuePanel').classList.toggle('visible'); };
+
+  function renderQueue() {
+    const list = document.getElementById('queueList');
+    document.getElementById('countBadge').textContent = String(queueData.length).padStart(2, '0');
+    if (queueData.length === 0) {
+      list.innerHTML = '<div class="empty-state">// no entries —</div>';
+      return;
+    }
+    list.innerHTML = queueData.map((entry, i) => `
+      <div class="queue-item">
+        <span class="queue-num">${i === 0 ? '▶ 01' : String(i + 1).padStart(2, '0')}</span>
+        <span class="queue-name">${escapeHtml(entry.name)}</span>
+      </div>`).join('');
+  }
+
+  function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+  window.showToast = function(msg, isError = false) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast' + (isError ? ' error' : '') + ' show';
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  };
+
+  document.getElementById('nameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') window.onReserveClick(); });
+  document.getElementById('modalBackdrop').addEventListener('click', (e) => { if (e.target.id === 'modalBackdrop') { closeModal(); pendingName = null; } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeModal(); pendingName = null; } });
+</script>
+</body>
+</html>

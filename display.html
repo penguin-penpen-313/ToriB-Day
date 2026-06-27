@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DISPLAY.EXE — 順番表示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #08080A;
+    --bg-1: #0E1014;
+    --bg-2: #161820;
+    --bg-3: #1F222B;
+    --border: #2A2D34;
+    --border-bright: #3F434E;
+    --amber: #FFA31A;
+    --amber-bright: #FFD93D;
+    --amber-glow: rgba(255, 163, 26, 0.6);
+    --green: #4AE54A;
+    --green-glow: rgba(74, 229, 74, 0.55);
+    --red: #FF3838;
+    --red-glow: rgba(255, 56, 56, 0.6);
+    --text: #E8E6E0;
+    --text-dim: #888B91;
+    --text-mute: #555861;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--bg-0);
+    color: var(--text);
+    font-family: 'DotGothic16', 'VT323', monospace;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Scanlines */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px);
+    pointer-events: none; z-index: 9990; mix-blend-mode: multiply;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%),
+      radial-gradient(ellipse at 50% 30%, rgba(255,163,26,0.05) 0%, transparent 50%);
+    pointer-events: none; z-index: 9991;
+  }
+  .noise {
+    position: fixed; inset: 0; pointer-events: none; z-index: 9989; opacity: 0.08;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.7'/></svg>");
+    animation: noiseShift 0.6s steps(3) infinite;
+  }
+  @keyframes noiseShift {
+    0%   { transform: translate(0,0); }
+    33%  { transform: translate(-2px, 1px); }
+    66%  { transform: translate(1px, -2px); }
+    100% { transform: translate(0,0); }
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  /* ===== TOP BAR ===== */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(10px, 2.5vw, 18px) clamp(14px, 3vw, 24px);
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .top-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+  }
+  .top-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(10px, 2.2vw, 14px);
+    letter-spacing: 0.25em;
+    color: var(--text);
+    text-transform: uppercase;
+    text-shadow: 2px 0 var(--red-glow), -2px 0 var(--green-glow);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .top-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+
+  .total-badge {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(9px, 2vw, 12px);
+    letter-spacing: 0.18em;
+    color: var(--amber);
+    background: rgba(255, 163, 26, 0.10);
+    border: 1px solid var(--amber);
+    padding: clamp(5px, 1.2vw, 7px) clamp(10px, 2vw, 14px);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .clock {
+    font-family: 'VT323', monospace;
+    font-size: clamp(15px, 3vw, 20px);
+    letter-spacing: 0.08em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .status-led {
+    width: 12px; height: 12px;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green-glow);
+    animation: ledBlink 1.5s steps(2) infinite;
+    flex-shrink: 0;
+  }
+  @keyframes ledBlink { 0%,75%{opacity:1} 76%,100%{opacity:0.55} }
+
+  /* ===== NEXT CARD (when queue has people) ===== */
+  .next-card {
+    margin: clamp(20px, 4vw, 36px) clamp(16px, 3.5vw, 28px);
+    background: var(--bg-1);
+    border: 2px solid var(--amber);
+    padding: clamp(22px, 5vw, 36px) clamp(20px, 4.5vw, 32px);
+    display: flex;
+    align-items: center;
+    gap: clamp(16px, 3.5vw, 28px);
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 4px var(--bg-0),
+      0 0 40px rgba(255, 163, 26, 0.25),
+      inset 0 0 40px rgba(255, 163, 26, 0.06);
+  }
+  .next-card::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px;
+    height: 6px;
+    background: var(--amber);
+    animation: alertBar 0.7s steps(2) infinite;
+  }
+  @keyframes alertBar {
+    0%, 100% { background: var(--amber); box-shadow: 0 0 16px var(--amber-glow); }
+    50% { background: var(--amber-bright); box-shadow: 0 0 24px rgba(255, 217, 61, 0.6); }
+  }
+
+  /* Sweeping scanline across the next card */
+  .next-card::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 60px;
+    top: -60px;
+    background: linear-gradient(180deg, transparent 0%, rgba(255, 163, 26, 0.12) 50%, transparent 100%);
+    animation: scanSweep 4s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes scanSweep {
+    0%   { top: -60px; }
+    100% { top: 100%; }
+  }
+
+  .next-num-block {
+    text-align: center;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .next-num-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(8px, 1.8vw, 11px);
+    letter-spacing: 0.3em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .next-num {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(48px, 11vw, 80px);
+    line-height: 1;
+    color: var(--amber);
+    text-shadow:
+      0 0 24px var(--amber-glow),
+      0 0 50px rgba(255, 163, 26, 0.35),
+      2px 0 var(--red-glow),
+      -2px 0 var(--green-glow);
+    animation: numPulse 2s steps(2) infinite;
+  }
+  @keyframes numPulse {
+    0%, 100% { transform: scale(1); text-shadow: 0 0 24px var(--amber-glow), 0 0 50px rgba(255, 163, 26, 0.35), 2px 0 var(--red-glow), -2px 0 var(--green-glow); }
+    50% { transform: scale(1.04); text-shadow: 0 0 40px var(--amber-bright), 0 0 70px rgba(255, 217, 61, 0.5), 3px 0 var(--red), -3px 0 var(--green); }
+  }
+
+  .next-divider {
+    width: 2px;
+    height: 80px;
+    background: var(--amber);
+    flex-shrink: 0;
+    opacity: 0.55;
+    box-shadow: 0 0 8px var(--amber-glow);
+  }
+
+  .next-info { flex: 1; min-width: 0; position: relative; z-index: 1; }
+
+  .next-tag {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(8px, 1.7vw, 11px);
+    letter-spacing: 0.3em;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    text-shadow: 0 0 8px var(--amber-glow);
+  }
+  .next-tag::before {
+    content: '▶ ';
+    animation: blinkArrow 0.5s steps(2) infinite;
+  }
+  @keyframes blinkArrow { 0%,50%{opacity:1} 51%,100%{opacity:0} }
+
+  .next-name {
+    font-family: 'DotGothic16', monospace;
+    font-size: clamp(24px, 5.5vw, 38px);
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    animation: slideIn 0.4s steps(5);
+    text-shadow: 0 0 14px rgba(232, 230, 224, 0.3);
+  }
+  .next-suffix {
+    font-size: 0.55em;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+
+  .next-waiting {
+    font-family: 'VT323', monospace;
+    font-size: clamp(15px, 2.8vw, 19px);
+    color: var(--text-dim);
+    margin-top: 8px;
+    letter-spacing: 0.08em;
+  }
+  .next-waiting strong {
+    color: var(--amber);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.7em;
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 6px var(--amber-glow);
+  }
+
+  /* ===== WAITING LIST ===== */
+  .list-section { flex: 1; padding: 0 clamp(16px, 3.5vw, 28px) 40px; }
+
+  .list-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(9px, 2vw, 12px);
+    letter-spacing: 0.3em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    padding: 22px 4px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .list-label::before {
+    content: '▸';
+    color: var(--amber);
+  }
+  .list-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: repeating-linear-gradient(90deg, var(--border) 0, var(--border) 4px, transparent 4px, transparent 8px);
+  }
+
+  .q-item {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: clamp(12px, 2.5vw, 16px) clamp(14px, 3vw, 20px);
+    margin-bottom: 5px;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    animation: fadeIn 0.25s steps(3);
+    position: relative;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .q-item:hover { border-color: var(--border-bright); }
+
+  .q-num {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(13px, 2.8vw, 17px);
+    width: 48px;
+    text-align: center;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  .q-item:nth-child(1) .q-num { color: var(--amber); text-shadow: 0 0 6px var(--amber-glow); }
+  .q-item:nth-child(2) .q-num { color: rgba(232, 230, 224, 0.85); }
+  .q-item:nth-child(3) .q-num { color: rgba(232, 230, 224, 0.6); }
+  .q-item:nth-child(n+4) .q-num { color: rgba(232, 230, 224, 0.4); }
+  .q-item:nth-child(n+4) { opacity: 0.7; }
+
+  .q-name {
+    font-family: 'DotGothic16', monospace;
+    font-size: clamp(18px, 3.5vw, 22px);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+    letter-spacing: 0.04em;
+  }
+  .q-item:nth-child(n+4) .q-name { font-size: clamp(15px, 3vw, 18px); }
+
+  /* ===== EMPTY STATE — LOADING SCREEN ===== */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px 60px;
+    text-align: center;
+    min-height: 60vh;
+  }
+
+  /* Animated semibot */
+  .semibot {
+    position: relative;
+    width: 120px;
+    height: 160px;
+    margin-bottom: 30px;
+    animation: bodyBob 0.5s steps(2) infinite;
+  }
+  @keyframes bodyBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  .semibot svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    filter: drop-shadow(0 0 14px rgba(255, 163, 26, 0.4));
+  }
+
+  /* SVG element animations */
+  .semibot .antenna-tip {
+    transform-origin: 60px 22px;
+    animation: antennaWiggle 1s steps(3) infinite;
+  }
+  @keyframes antennaWiggle {
+    0%, 100% { transform: rotate(0deg) translateY(0); }
+    33% { transform: rotate(0deg) translateY(-1px); }
+    66% { transform: rotate(0deg) translateY(1px); }
+  }
+
+  .semibot .eye-pupil {
+    animation: eyeBlink 3.5s steps(1) infinite;
+  }
+  @keyframes eyeBlink {
+    0%, 92%, 100% { opacity: 1; transform: scaleY(1); }
+    93%, 98% { opacity: 1; transform: scaleY(0.05); }
+  }
+
+  .semibot .leg-left  { animation: legLeft 0.5s steps(2) infinite; }
+  .semibot .leg-right { animation: legRight 0.5s steps(2) infinite; }
+  @keyframes legLeft  { 0%, 50% { transform: translateY(0); } 51%, 100% { transform: translateY(-5px); } }
+  @keyframes legRight { 0%, 50% { transform: translateY(-5px); } 51%, 100% { transform: translateY(0); } }
+
+  .semibot .arm-left  { animation: armLeft 0.5s steps(2) infinite; transform-origin: 32px 68px; }
+  .semibot .arm-right { animation: armRight 0.5s steps(2) infinite; transform-origin: 88px 68px; }
+  @keyframes armLeft  { 0%, 50% { transform: rotate(8deg); } 51%, 100% { transform: rotate(-8deg); } }
+  @keyframes armRight { 0%, 50% { transform: rotate(-8deg); } 51%, 100% { transform: rotate(8deg); } }
+
+  /* Shadow under bot */
+  .semibot-shadow {
+    width: 90px;
+    height: 8px;
+    background: radial-gradient(ellipse, rgba(255,163,26,0.35) 0%, transparent 70%);
+    margin: -10px auto 24px;
+    border-radius: 50%;
+    animation: shadowPulse 0.5s steps(2) infinite;
+  }
+  @keyframes shadowPulse {
+    0%, 100% { transform: scaleX(1); opacity: 0.6; }
+    50% { transform: scaleX(1.15); opacity: 0.9; }
+  }
+
+  .loading-text {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(14px, 3vw, 18px);
+    color: var(--amber);
+    letter-spacing: 0.3em;
+    margin-bottom: 16px;
+    text-shadow: 0 0 12px var(--amber-glow);
+    text-transform: uppercase;
+  }
+  .loading-text .dots::after {
+    content: '...';
+    animation: dotCycle 1.2s steps(4) infinite;
+    display: inline-block;
+    text-align: left;
+    width: 1.5em;
+  }
+  @keyframes dotCycle {
+    0%   { content: '   '; }
+    25%  { content: '.  '; }
+    50%  { content: '.. '; }
+    75%  { content: '...'; }
+    100% { content: '   '; }
+  }
+
+  .loading-sub {
+    font-family: 'VT323', monospace;
+    font-size: clamp(14px, 2.6vw, 17px);
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 30px;
+  }
+
+  /* Loading progress bar */
+  .progress {
+    width: min(280px, 80vw);
+    height: 14px;
+    border: 1px solid var(--amber);
+    background: var(--bg-1);
+    position: relative;
+    overflow: hidden;
+    padding: 2px;
+  }
+  .progress-inner {
+    height: 100%;
+    width: 0%;
+    background: repeating-linear-gradient(90deg, var(--amber) 0, var(--amber) 6px, transparent 6px, transparent 8px);
+    animation: progressFill 4s steps(20) infinite;
+  }
+  @keyframes progressFill {
+    0%   { width: 0%; }
+    50%  { width: 100%; }
+    51%  { width: 0%; }
+    100% { width: 100%; }
+  }
+
+  /* Hint log */
+  .hint-log {
+    margin-top: 26px;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    color: var(--text-mute);
+    letter-spacing: 0.06em;
+    line-height: 1.8;
+  }
+  .hint-log .ok { color: var(--green); }
+  .hint-log .amber { color: var(--amber); }
+
+  .credits {
+    position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
+    font-family: 'VT323', monospace; font-size: 12px;
+    color: var(--text-mute); letter-spacing: 0.18em;
+    pointer-events: none; z-index: 50; white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<div class="page">
+
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="status-led"></div>
+      <span class="top-title">QUEUE.TERMINAL</span>
+    </div>
+    <div class="top-right">
+      <span class="total-badge" id="totalBadge">— STANDBY —</span>
+      <span class="clock" id="clock">--:--:--</span>
+    </div>
+  </div>
+
+  <div id="mainArea" style="flex:1;display:flex;flex-direction:column;"></div>
+
+  <div class="list-section" id="listSection" style="display:none;">
+    <div class="list-label">WAITING LIST</div>
+    <div id="waitList"></div>
+  </div>
+
+</div>
+
+<div class="credits">▸▸▸ PRODUCED BY PENPEN ◂◂◂</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCLvalYsoPBnG40Ca7bpuIsUwNc7Qux9E",
+    authDomain: "queue-tori.firebaseapp.com",
+    projectId: "queue-tori",
+    storageBucket: "queue-tori.firebasestorage.app",
+    messagingSenderId: "608324516122",
+    appId: "1:608324516122:web:f1e511722e96945e9514a3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Semibot SVG — animated walking robot inspired by R.E.P.O.
+  const SEMIBOT_SVG = `
+    <svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stop-color="#FFD93D" />
+          <stop offset="100%" stop-color="#FFA31A" />
+        </linearGradient>
+      </defs>
+
+      <!-- Antenna tip (animated) -->
+      <g class="antenna-tip">
+        <line x1="60" y1="22" x2="60" y2="10" stroke="#FFA31A" stroke-width="2.5" />
+        <rect x="56" y="4" width="8" height="8" fill="#FF3838" />
+        <rect x="58" y="2" width="4" height="4" fill="#FFD93D" />
+      </g>
+
+      <!-- Head -->
+      <rect x="28" y="22" width="64" height="38" fill="url(#bodyG)" stroke="#A06800" stroke-width="2" />
+      <!-- Head highlight -->
+      <rect x="32" y="26" width="56" height="4" fill="#FFE96B" opacity="0.7" />
+
+      <!-- Eye (single big lens) -->
+      <rect x="46" y="32" width="28" height="20" fill="#08080A" stroke="#A06800" stroke-width="2" />
+      <circle cx="60" cy="42" r="8" fill="#08080A" />
+      <circle cx="60" cy="42" r="6" fill="#4AE54A" class="eye-pupil" />
+      <rect x="58" y="38" width="2" height="2" fill="#E8E6E0" class="eye-pupil" />
+
+      <!-- Body -->
+      <rect x="22" y="60" width="76" height="48" fill="url(#bodyG)" stroke="#A06800" stroke-width="2" />
+      <!-- Body vents -->
+      <rect x="30" y="70" width="60" height="3" fill="#A06800" />
+      <rect x="30" y="78" width="60" height="3" fill="#A06800" />
+      <rect x="30" y="86" width="60" height="3" fill="#A06800" />
+      <rect x="30" y="94" width="60" height="3" fill="#A06800" />
+      <!-- Chest LED -->
+      <rect x="56" y="100" width="8" height="4" fill="#FF3838" />
+
+      <!-- Arms -->
+      <rect class="arm-left" x="12" y="64" width="12" height="28" fill="url(#bodyG)" stroke="#A06800" stroke-width="2" />
+      <rect class="arm-right" x="96" y="64" width="12" height="28" fill="url(#bodyG)" stroke="#A06800" stroke-width="2" />
+
+      <!-- Legs -->
+      <g class="leg-left">
+        <rect x="32" y="108" width="16" height="26" fill="url(#bodyG)" stroke="#A06800" stroke-width="2" />
+        <rect x="28" y="130" width="22" height="8" fill="#A06800" />
+      </g>
+      <g class="leg-right">
+        <rect x="72" y="108" width="16" height="26" fill="url(#bodyG)" stroke="#A06800" stroke-width="2" />
+        <rect x="68" y="130" width="22" height="8" fill="#A06800" />
+      </g>
+    </svg>
+  `;
+
+  function buildEmptyState() {
+    return `
+      <div class="empty-state">
+        <div class="semibot">${SEMIBOT_SVG}</div>
+        <div class="semibot-shadow"></div>
+        <div class="loading-text">STANDBY<span class="dots"></span></div>
+        <div class="loading-sub">// awaiting first reservation</div>
+        <div class="progress"><div class="progress-inner"></div></div>
+        <div class="hint-log">
+          > queue.listen() <span class="ok">[OK]</span><br>
+          > listening on collection://queue<br>
+          > waiting for input<span class="amber">_</span>
+        </div>
+      </div>`;
+  }
+
+  function buildNextCard(next, total) {
+    return `
+      <div class="next-card">
+        <div class="next-num-block">
+          <div class="next-num-label">No.</div>
+          <div class="next-num">01</div>
+        </div>
+        <div class="next-divider"></div>
+        <div class="next-info">
+          <div class="next-tag">NOW SERVING</div>
+          <div class="next-name">${escapeHtml(next.name)}<span class="next-suffix">さん</span></div>
+          <div class="next-waiting">// <strong>${total}</strong> in queue</div>
+        </div>
+      </div>`;
+  }
+
+  onSnapshot(query(collection(db, 'queue'), orderBy('order')), (snapshot) => {
+    render(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+  });
+
+  function render(data) {
+    const mainArea = document.getElementById('mainArea');
+    const listSection = document.getElementById('listSection');
+    const waitList = document.getElementById('waitList');
+    const totalBadge = document.getElementById('totalBadge');
+
+    totalBadge.textContent = data.length > 0 ? `${String(data.length).padStart(2, '0')} · ACTIVE` : '— STANDBY —';
+
+    if (data.length === 0) {
+      mainArea.innerHTML = buildEmptyState();
+      listSection.style.display = 'none';
+      return;
+    }
+
+    mainArea.innerHTML = buildNextCard(data[0], data.length);
+
+    if (data.length > 1) {
+      listSection.style.display = 'block';
+      waitList.innerHTML = data.slice(1).map((entry, i) => `
+        <div class="q-item">
+          <span class="q-num">${String(i + 2).padStart(2, '0')}</span>
+          <span class="q-name">${escapeHtml(entry.name)}</span>
+        </div>`).join('');
+    } else {
+      listSection.style.display = 'none';
+    }
+  }
+
+  function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+  function updateClock() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('clock').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  }
+  setInterval(updateClock, 1000); updateClock();
+</script>
+</body>
+</html>
