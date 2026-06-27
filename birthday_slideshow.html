@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Birthday — A Letter in Paper Cranes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Italiana&family=Shippori+Mincho:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FFF9F0;
+    --pink: #F5C6D0;
+    --pink-deep: #E8A8B8;
+    --sky: #B8DCEC;
+    --sky-deep: #8FC4DC;
+    --yellow: #FAE5A0;
+    --yellow-deep: #F0CE6B;
+    --ink: #2C3E50;
+    --ink-soft: #5B6B7F;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: linear-gradient(180deg, #FFF9F0 0%, #FDE9EE 45%, #DCEEF6 100%);
+    font-family: 'Shippori Mincho', serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #scene-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+
+  /* ---------- Slide overlay ---------- */
+  #slides {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 1.2s cubic-bezier(.4,0,.2,1);
+    pointer-events: none;
+    padding: 4vh 6vw;
+  }
+
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ---------- Title slide ---------- */
+  .title-wrap {
+    text-align: center;
+    transform: translateY(-2vh);
+  }
+
+  .title-eyebrow {
+    font-family: 'Italiana', serif;
+    font-size: clamp(11px, 1.2vw, 14px);
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 2.4em;
+    padding-left: 0.5em;
+    opacity: 0;
+    animation: fadeUp 1.4s 0.3s forwards;
+  }
+
+  .title-main {
+    font-family: 'Italiana', serif;
+    font-size: clamp(48px, 9vw, 132px);
+    line-height: 0.95;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 0.1em;
+    opacity: 0;
+    animation: fadeUp 1.6s 0.6s forwards;
+  }
+
+  .title-main .amp {
+    font-style: italic;
+    color: var(--pink-deep);
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+  }
+
+  .title-jp {
+    font-family: 'Shippori Mincho', serif;
+    font-size: clamp(15px, 1.5vw, 19px);
+    letter-spacing: 0.6em;
+    color: var(--ink-soft);
+    margin-top: 2.2em;
+    padding-left: 0.6em;
+    opacity: 0;
+    animation: fadeUp 1.4s 1.0s forwards;
+  }
+
+  .title-rule {
+    width: 1px;
+    height: 60px;
+    background: var(--ink);
+    margin: 3em auto 0;
+    opacity: 0;
+    transform-origin: top;
+    animation: drawRule 1.2s 1.4s forwards;
+  }
+
+  .title-meta {
+    position: absolute;
+    bottom: 5vh;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 6vw;
+    font-family: 'Italiana', serif;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    opacity: 0;
+    animation: fadeUp 1.4s 1.6s forwards;
+  }
+
+  /* ---------- Memory slides ---------- */
+  .memory {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8vw;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+  }
+
+  .memory-photo {
+    aspect-ratio: 4/5;
+    position: relative;
+    transform: rotate(-2deg);
+    transition: transform 0.6s;
+  }
+
+  .memory:nth-child(even) .memory-photo {
+    transform: rotate(2deg);
+  }
+
+  .photo-frame {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    padding: 5% 5% 18% 5%;
+    box-shadow:
+      0 30px 60px -20px rgba(44, 62, 80, 0.25),
+      0 10px 20px -5px rgba(44, 62, 80, 0.15);
+  }
+
+  .photo-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .photo-caption {
+    position: absolute;
+    bottom: 5%;
+    left: 5%;
+    right: 5%;
+    text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(14px, 1.2vw, 17px);
+    color: var(--ink-soft);
+    padding-top: 4%;
+  }
+
+  /* SVG illustration backgrounds for photo placeholders */
+  .photo-inner svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .memory-text {
+    max-width: 480px;
+  }
+
+  .memory-number {
+    font-family: 'Italiana', serif;
+    font-size: 13px;
+    letter-spacing: 0.5em;
+    color: var(--ink-soft);
+    margin-bottom: 2em;
+    text-transform: uppercase;
+  }
+
+  .memory-title {
+    font-family: 'Shippori Mincho', serif;
+    font-weight: 500;
+    font-size: clamp(26px, 3.4vw, 44px);
+    line-height: 1.4;
+    color: var(--ink);
+    margin-bottom: 1.2em;
+  }
+
+  .memory-title .accent {
+    color: var(--pink-deep);
+  }
+
+  .memory-divider {
+    width: 40px;
+    height: 1px;
+    background: var(--ink);
+    margin-bottom: 2em;
+  }
+
+  .memory-body {
+    font-family: 'Shippori Mincho', serif;
+    font-size: clamp(14px, 1.1vw, 16px);
+    line-height: 2.0;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+  }
+
+  /* ---------- Closing slide ---------- */
+  .closing {
+    text-align: center;
+    max-width: 700px;
+  }
+
+  .closing-mark {
+    font-family: 'Italiana', serif;
+    font-size: clamp(60px, 11vw, 160px);
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .closing-mark .heart {
+    color: var(--pink-deep);
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 300;
+  }
+
+  .closing-jp {
+    font-family: 'Shippori Mincho', serif;
+    font-size: clamp(18px, 1.8vw, 22px);
+    line-height: 2.2;
+    letter-spacing: 0.2em;
+    color: var(--ink-soft);
+    margin-top: 2em;
+  }
+
+  .closing-sig {
+    margin-top: 4em;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(14px, 1.2vw, 18px);
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Navigation ---------- */
+  #nav {
+    position: fixed;
+    bottom: 4vh;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 14px 24px;
+    background: rgba(255, 249, 240, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(44, 62, 80, 0.08);
+    border-radius: 100px;
+  }
+
+  .nav-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink);
+    padding: 6px 8px;
+    font-family: 'Italiana', serif;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    transition: opacity 0.3s;
+  }
+
+  .nav-btn:hover { opacity: 0.6; }
+  .nav-btn:disabled { opacity: 0.25; cursor: default; }
+
+  #dots {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink-soft);
+    opacity: 0.3;
+    cursor: pointer;
+    transition: all 0.4s;
+  }
+
+  .dot.active {
+    background: var(--pink-deep);
+    opacity: 1;
+    width: 24px;
+    border-radius: 100px;
+  }
+
+  /* Counter */
+  #counter {
+    position: fixed;
+    top: 5vh;
+    right: 6vw;
+    z-index: 20;
+    font-family: 'Italiana', serif;
+    font-size: 12px;
+    letter-spacing: 0.4em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+
+  #counter .current {
+    color: var(--ink);
+    font-size: 22px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Brand mark */
+  #mark {
+    position: fixed;
+    top: 5vh;
+    left: 6vw;
+    z-index: 20;
+    font-family: 'Italiana', serif;
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+
+  #mark .glyph {
+    display: inline-block;
+    width: 14px;
+    height: 1px;
+    background: var(--ink-soft);
+    vertical-align: middle;
+    margin: 0 8px;
+  }
+
+  /* ---------- Slide enter animations ---------- */
+  .slide.active .memory-photo,
+  .slide.active .memory-text,
+  .slide.active .closing {
+    animation: slideIn 1.4s 0.2s both;
+  }
+
+  .slide.active .memory-text {
+    animation-delay: 0.5s;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .slide.active .memory-photo {
+    animation-name: photoIn;
+  }
+
+  @keyframes photoIn {
+    from {
+      opacity: 0;
+      transform: translateY(40px) rotate(-2deg) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) rotate(-2deg) scale(1);
+    }
+  }
+
+  .slide.active .memory:nth-child(even) .memory-photo {
+    animation-name: photoInEven;
+  }
+
+  @keyframes photoInEven {
+    from {
+      opacity: 0;
+      transform: translateY(40px) rotate(2deg) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) rotate(2deg) scale(1);
+    }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes drawRule {
+    from { opacity: 0; transform: scaleY(0); }
+    to { opacity: 1; transform: scaleY(1); }
+  }
+
+  /* Hint */
+  #hint {
+    position: fixed;
+    bottom: 14vh;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 19;
+    font-family: 'Italiana', serif;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    opacity: 0;
+    animation: hintFade 4s 2s forwards;
+    pointer-events: none;
+  }
+
+  @keyframes hintFade {
+    0%, 80% { opacity: 0.6; }
+    100% { opacity: 0; }
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .memory {
+      grid-template-columns: 1fr;
+      gap: 6vh;
+      max-width: 360px;
+    }
+    .memory-photo {
+      max-width: 280px;
+      margin: 0 auto;
+    }
+    .title-meta { display: none; }
+    #mark { display: none; }
+    #counter { top: 3vh; right: 6vw; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="scene-canvas"></canvas>
+
+<div id="mark">Origami<span class="glyph"></span>Letter</div>
+<div id="counter"><span class="current">01</span> / <span id="slide-total">--</span></div>
+
+<div id="slides">
+
+  <!-- Slide 0: Title -->
+  <div class="slide active" data-slide="0">
+    <div class="title-wrap">
+      <div class="title-eyebrow">A Letter Folded in Paper</div>
+      <h1 class="title-main">Happy <em class="amp">&</em><br>Birthday</h1>
+      <div class="title-jp">ゆ き ち ゃ ん へ</div>
+      <div class="title-rule"></div>
+    </div>
+    <div class="title-meta">
+      <span>Volume One</span>
+      <span>Summer 2026</span>
+    </div>
+  </div>
+
+  <!-- MESSAGE SLIDES — injected dynamically by JS from localStorage -->
+
+  <!-- Closing slide (always last, index set by JS) -->
+  <div class="slide" id="slide-closing">
+    <div class="closing">
+      <div class="memory-number" style="margin-bottom: 2em;">— Closing Letter —</div>
+      <div class="closing-mark">Happy <em class="heart">Birthday</em></div>
+      <div class="closing-jp">
+        生まれてきてくれて、ありがとう。<br>
+        あなたの一年が、たくさんの花と、<br>
+        やわらかな羽音に包まれますように。
+      </div>
+      <div class="closing-sig">— with love, from me to you</div>
+    </div>
+  </div>
+
+</div>
+
+<div id="hint">← → to navigate</div>
+
+<div id="nav">
+  <button class="nav-btn" id="prev">Prev</button>
+  <div id="dots"></div>
+  <button class="nav-btn" id="next">Next</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ============================================================
+   ORIGAMI LETTER — 3D background scene
+   ============================================================ */
+
+const canvas = document.getElementById('scene-canvas');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xFFF4E8, 18, 70);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 0, 22);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0);
+
+/* ---------- Lights ---------- */
+const ambient = new THREE.AmbientLight(0xFFFFFF, 0.7);
+scene.add(ambient);
+
+const key = new THREE.DirectionalLight(0xFFF4E0, 0.9);
+key.position.set(5, 8, 6);
+scene.add(key);
+
+const rim = new THREE.DirectionalLight(0xB8DCEC, 0.5);
+rim.position.set(-6, 3, -4);
+scene.add(rim);
+
+/* ============================================================
+   COLOR HELPERS
+   ============================================================ */
+const PALETTE = {
+  pink:      0xF5C6D0,
+  pinkDeep:  0xE8A8B8,
+  sky:       0xB8DCEC,
+  skyDeep:   0x8FC4DC,
+  yellow:    0xFAE5A0,
+  yellowDeep:0xF0CE6B,
+  cream:     0xFFF9F0,
+  lavender:  0xE0D4E8,
+  mint:      0xD4E8DC,
+  ink:       0x2C3E50
+};
+
+function hexToRgb(hex) {
+  if (typeof hex === 'number') hex = '#' + hex.toString(16).padStart(6, '0');
+  const h = hex.replace('#', '');
+  return [
+    parseInt(h.substr(0,2), 16),
+    parseInt(h.substr(2,2), 16),
+    parseInt(h.substr(4,2), 16)
+  ];
+}
+function rgbToCss(rgb) {
+  return `rgb(${Math.round(rgb[0])}, ${Math.round(rgb[1])}, ${Math.round(rgb[2])})`;
+}
+function rgbToHexInt(rgb) {
+  return (Math.round(rgb[0]) << 16) | (Math.round(rgb[1]) << 8) | Math.round(rgb[2]);
+}
+function lerpRgb(a, b, t) {
+  return [a[0] + (b[0]-a[0])*t, a[1] + (b[1]-a[1])*t, a[2] + (b[2]-a[2])*t];
+}
+
+/* ============================================================
+   BIRD MODEL — body, head, beak, eyes, two wings, tail fan
+   Low-ish poly but recognizable; ~250-300 tris per bird
+   ============================================================ */
+
+function makeBird(bodyColor, wingColor, beakColor) {
+  const group = new THREE.Group();
+
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: bodyColor, roughness: 0.75, metalness: 0.0, flatShading: true
+  });
+  const wingMat = new THREE.MeshStandardMaterial({
+    color: wingColor, roughness: 0.85, metalness: 0.0,
+    side: THREE.DoubleSide, flatShading: true
+  });
+  const beakMat = new THREE.MeshStandardMaterial({
+    color: beakColor, roughness: 0.5, flatShading: true
+  });
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x2C3E50 });
+
+  // Body: stretched sphere, plump like a sparrow
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 14, 10), bodyMat);
+  body.scale.set(1.5, 0.95, 0.9);
+  group.add(body);
+
+  // Head
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.36, 12, 10), bodyMat);
+  head.position.set(0.72, 0.28, 0);
+  group.add(head);
+
+  // Beak
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.28, 8), beakMat);
+  beak.position.set(1.05, 0.26, 0);
+  beak.rotation.z = -Math.PI / 2;
+  group.add(beak);
+
+  // Eyes
+  const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), eyeMat);
+  eyeL.position.set(0.88, 0.38, 0.22);
+  group.add(eyeL);
+  const eyeR = eyeL.clone();
+  eyeR.position.z = -0.22;
+  group.add(eyeR);
+
+  // Wings: layered triangles for a feathered silhouette
+  function makeWing(side) {
+    const s = side; // +1 right side, -1 left side (mirrored)
+    const geo = new THREE.BufferGeometry();
+    // Wing has multiple feather "panels" extending outward
+    const v = new Float32Array([
+      // root edge (attached to body)
+       0.20, 0.00, 0.00,   // 0: front root
+      -0.45, 0.00, 0.00,   // 1: back root
+      // primary feathers row 1
+       0.35, 0.05, 0.85*s, // 2
+      -0.30, 0.02, 0.95*s, // 3
+      // primary feathers row 2 (wing extends further)
+       0.20, 0.02, 1.50*s, // 4
+      -0.55, 0.00, 1.55*s, // 5
+      // wing tip
+       0.00, 0.00, 2.05*s, // 6
+      -0.40, 0.00, 1.95*s  // 7
+    ]);
+    const idx = [
+      // root → mid
+      0, 2, 1,
+      1, 2, 3,
+      // mid → outer
+      2, 4, 3,
+      3, 4, 5,
+      // outer → tip
+      4, 6, 5,
+      5, 6, 7
+    ];
+    geo.setAttribute('position', new THREE.BufferAttribute(v, 3));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, wingMat);
+    m.position.set(0, 0.22, 0);
+    return m;
+  }
+  const wingL = makeWing(1);
+  const wingR = makeWing(-1);
+  group.add(wingL);
+  group.add(wingR);
+
+  // Tail fan: 4 triangles spread horizontally
+  const tailGeo = new THREE.BufferGeometry();
+  const tv = new Float32Array([
+    0.00, 0.00, 0.00,        // 0: root
+   -0.85, 0.18, 0.30,        // 1: top-far
+   -0.70, 0.05, 0.18,        // 2: mid
+   -0.95, 0.10, 0.00,        // 3: center-far
+   -0.70, 0.05,-0.18,        // 4: mid mirror
+   -0.85, 0.18,-0.30         // 5: top-far mirror
+  ]);
+  tailGeo.setAttribute('position', new THREE.BufferAttribute(tv, 3));
+  tailGeo.setIndex([0,1,2, 0,2,3, 0,3,4, 0,4,5]);
+  tailGeo.computeVertexNormals();
+  const tail = new THREE.Mesh(tailGeo, wingMat);
+  tail.position.set(-0.55, 0.05, 0);
+  group.add(tail);
+
+  group.userData.wingL = wingL;
+  group.userData.wingR = wingR;
+
+  return group;
+}
+
+/* ---------- Spawn the flock ---------- */
+const birds = [];
+const birdPairs = [
+  [PALETTE.pink,     PALETTE.pinkDeep],
+  [PALETTE.sky,      PALETTE.skyDeep],
+  [PALETTE.yellow,   PALETTE.yellowDeep],
+  [PALETTE.cream,    PALETTE.pink],
+  [PALETTE.pinkDeep, PALETTE.cream],
+  [PALETTE.skyDeep,  PALETTE.sky],
+  [PALETTE.yellow,   PALETTE.cream]
+];
+
+for (let i = 0; i < 12; i++) {
+  const [b, w] = birdPairs[i % birdPairs.length];
+  const bird = makeBird(b, w, PALETTE.yellowDeep);
+  const scale = 0.55 + Math.random() * 0.55;
+  bird.scale.setScalar(scale);
+
+  bird.userData.orbit = {
+    radius: 7 + Math.random() * 9,
+    radiusY: 3 + Math.random() * 4,
+    speed: 0.05 + Math.random() * 0.07,
+    phase: Math.random() * Math.PI * 2,
+    tilt: (Math.random() - 0.5) * 0.5,
+    yOffset: (Math.random() - 0.5) * 4,
+    zOffset: (Math.random() - 0.5) * 8 - 4,
+    flapSpeed: 4.0 + Math.random() * 2.5,
+    flapPhase: Math.random() * Math.PI * 2,
+    flapAmp: 0.55 + Math.random() * 0.35
+  };
+
+  scene.add(bird);
+  birds.push(bird);
+}
+
+/* ============================================================
+   FLOWER PETALS — drifting particles with color targets
+   ============================================================ */
+
+const PETAL_COUNT = 220;
+const petalGeom = new THREE.PlaneGeometry(0.18, 0.32);
+const petals = [];
+
+for (let i = 0; i < PETAL_COUNT; i++) {
+  const mat = new THREE.MeshBasicMaterial({
+    color: PALETTE.pink,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.75
+  });
+  const p = new THREE.Mesh(petalGeom, mat);
+
+  p.position.set(
+    (Math.random() - 0.5) * 50,
+    Math.random() * 40 - 5,
+    (Math.random() - 0.5) * 40 - 4
+  );
+
+  p.userData = {
+    fallSpeed: 0.012 + Math.random() * 0.025,
+    swayAmp: 0.5 + Math.random() * 1.2,
+    swayFreq: 0.4 + Math.random() * 0.6,
+    swayPhase: Math.random() * Math.PI * 2,
+    rotSpeedX: (Math.random() - 0.5) * 0.04,
+    rotSpeedY: (Math.random() - 0.5) * 0.04,
+    rotSpeedZ: (Math.random() - 0.5) * 0.04,
+    baseX: p.position.x,
+    paletteSlot: i % 4,           // which slot of the theme palette this petal uses
+    currentRgb: [245, 198, 208],  // tweened color (starts pink)
+    targetRgb:  [245, 198, 208]
+  };
+
+  p.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+  scene.add(p);
+  petals.push(p);
+}
+
+/* ============================================================
+   SOFT BACKGROUND GLOW DISCS — abstract "bokeh"
+   ============================================================ */
+const glows = [];
+for (let i = 0; i < 8; i++) {
+  const geom = new THREE.CircleGeometry(2 + Math.random() * 3, 32);
+  const mat = new THREE.MeshBasicMaterial({
+    color: PALETTE.pink,
+    transparent: true,
+    opacity: 0.10
+  });
+  const g = new THREE.Mesh(geom, mat);
+  g.position.set(
+    (Math.random() - 0.5) * 40,
+    (Math.random() - 0.5) * 20,
+    -12 - Math.random() * 8
+  );
+  g.userData = {
+    paletteSlot: i % 3,
+    currentRgb: [245, 198, 208],
+    targetRgb:  [245, 198, 208]
+  };
+  scene.add(g);
+  glows.push(g);
+}
+
+/* ============================================================
+   THEME SYSTEM — each slide has its own color palette.
+   bgStops: 3 colors for the body background gradient (top→middle→bottom)
+   petalColors: 4 colors mapped to petal slot 0..3
+   glowColors: 3 colors mapped to glow slot 0..2
+   fog: scene fog color
+   ============================================================ */
+
+const themes = [
+  { // 0: Title — dawn cream / soft pink
+    bgStops:     ['#FFF9F0', '#FDE9EE', '#DCEEF6'],
+    petalColors: ['#F5C6D0', '#FFF9F0', '#E8A8B8', '#FAE5A0'],
+    glowColors:  ['#F5C6D0', '#FFF9F0', '#FAE5A0'],
+    fog: '#FFF4E8'
+  },
+  { // 1: Spring meeting — warm yellow + pink
+    bgStops:     ['#FFF4D6', '#FCDDE0', '#FBE9C5'],
+    petalColors: ['#FAE5A0', '#F5C6D0', '#F0CE6B', '#FFF9F0'],
+    glowColors:  ['#FAE5A0', '#F5C6D0', '#FFF9F0'],
+    fog: '#FFF0CC'
+  },
+  { // 2: Summer sea — sky blue + sun yellow
+    bgStops:     ['#C8E2F0', '#FBE9C5', '#F5C6D0'],
+    petalColors: ['#B8DCEC', '#FAE5A0', '#8FC4DC', '#FFF9F0'],
+    glowColors:  ['#B8DCEC', '#FAE5A0', '#FFF9F0'],
+    fog: '#DCEEF6'
+  },
+  { // 3: Quiet night — dusky blue + lavender + cream
+    bgStops:     ['#D9E0EB', '#E8DCE6', '#C9D5E0'],
+    petalColors: ['#B8DCEC', '#FFF9F0', '#E0D4E8', '#8FC4DC'],
+    glowColors:  ['#8FC4DC', '#E0D4E8', '#FFF9F0'],
+    fog: '#D9E0EB'
+  },
+  { // 4: Warm everyday — pink + yellow sunshine
+    bgStops:     ['#FCE0E5', '#FDF0D8', '#FCDDE0'],
+    petalColors: ['#F5C6D0', '#FAE5A0', '#E8A8B8', '#FFF9F0'],
+    glowColors:  ['#F5C6D0', '#FAE5A0', '#E8A8B8'],
+    fog: '#FCE0E5'
+  },
+  { // 5: Closing — all colors blending
+    bgStops:     ['#FFF9F0', '#F5C6D0', '#B8DCEC'],
+    petalColors: ['#F5C6D0', '#B8DCEC', '#FAE5A0', '#FFF9F0'],
+    glowColors:  ['#F5C6D0', '#B8DCEC', '#FAE5A0'],
+    fog: '#FFF4E8'
+  }
+];
+
+// Current tweened theme state
+const themeState = {
+  bgStops:     themes[0].bgStops.map(hexToRgb),
+  petalColors: themes[0].petalColors.map(hexToRgb),
+  glowColors:  themes[0].glowColors.map(hexToRgb),
+  fog:         hexToRgb(themes[0].fog),
+  // targets
+  tBgStops:     themes[0].bgStops.map(hexToRgb),
+  tPetalColors: themes[0].petalColors.map(hexToRgb),
+  tGlowColors:  themes[0].glowColors.map(hexToRgb),
+  tFog:         hexToRgb(themes[0].fog)
+};
+
+function applyTheme(idx) {
+  const th = themes[idx];
+  themeState.tBgStops     = th.bgStops.map(hexToRgb);
+  themeState.tPetalColors = th.petalColors.map(hexToRgb);
+  themeState.tGlowColors  = th.glowColors.map(hexToRgb);
+  themeState.tFog         = hexToRgb(th.fog);
+
+  // Assign each petal/glow its slot target
+  petals.forEach(p => {
+    p.userData.targetRgb = themeState.tPetalColors[p.userData.paletteSlot];
+  });
+  glows.forEach(g => {
+    g.userData.targetRgb = themeState.tGlowColors[g.userData.paletteSlot];
+  });
+}
+
+function tweenColors(speed) {
+  // Lerp all theme arrays toward targets
+  for (let i = 0; i < 3; i++) {
+    themeState.bgStops[i] = lerpRgb(themeState.bgStops[i], themeState.tBgStops[i], speed);
+  }
+  themeState.fog = lerpRgb(themeState.fog, themeState.tFog, speed);
+
+  // Update body background
+  document.body.style.background =
+    `linear-gradient(180deg, ${rgbToCss(themeState.bgStops[0])} 0%, ${rgbToCss(themeState.bgStops[1])} 45%, ${rgbToCss(themeState.bgStops[2])} 100%)`;
+
+  // Update fog
+  scene.fog.color.setHex(rgbToHexInt(themeState.fog));
+
+  // Tween each petal & glow
+  petals.forEach(p => {
+    p.userData.currentRgb = lerpRgb(p.userData.currentRgb, p.userData.targetRgb, speed);
+    p.material.color.setHex(rgbToHexInt(p.userData.currentRgb));
+  });
+  glows.forEach(g => {
+    g.userData.currentRgb = lerpRgb(g.userData.currentRgb, g.userData.targetRgb, speed);
+    g.material.color.setHex(rgbToHexInt(g.userData.currentRgb));
+  });
+}
+
+/* ============================================================
+   ANIMATION LOOP
+   ============================================================ */
+
+let targetCameraX = 0;
+let targetCameraY = 0;
+let targetCameraZ = 22;
+let currentCameraX = 0;
+let currentCameraY = 0;
+let currentCameraZ = 22;
+
+// Mouse parallax
+let mouseX = 0, mouseY = 0;
+window.addEventListener('mousemove', (e) => {
+  mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+  mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+});
+
+const clock = new THREE.Clock();
+
+function animate() {
+  const t = clock.getElapsedTime();
+  const dt = clock.getDelta();
+
+  // Smoothly interpolate the active theme toward its target
+  tweenColors(0.025);
+
+  // Camera with smooth parallax + slide-driven offset
+  currentCameraX += (targetCameraX + mouseX * 1.2 - currentCameraX) * 0.04;
+  currentCameraY += (targetCameraY + mouseY * 0.6 - currentCameraY) * 0.04;
+  currentCameraZ += (targetCameraZ - currentCameraZ) * 0.04;
+  camera.position.set(currentCameraX, currentCameraY, currentCameraZ);
+  camera.lookAt(0, 0, 0);
+
+  // Animate birds
+  birds.forEach(c => {
+    const o = c.userData.orbit;
+    const a = t * o.speed + o.phase;
+    c.position.x = Math.cos(a) * o.radius;
+    c.position.z = Math.sin(a) * o.radius + o.zOffset;
+    c.position.y = Math.sin(a * 0.7) * o.radiusY + o.yOffset;
+
+    // Face direction of travel (tangent to orbit)
+    const lookAhead = a + 0.1;
+    const lx = Math.cos(lookAhead) * o.radius;
+    const lz = Math.sin(lookAhead) * o.radius + o.zOffset;
+    c.lookAt(lx, c.position.y, lz);
+    c.rotateY(Math.PI / 2);
+    c.rotation.z = o.tilt;
+
+    // Flap wings
+    const flap = Math.sin(t * o.flapSpeed + o.flapPhase) * o.flapAmp;
+    c.userData.wingL.rotation.x = -flap;
+    c.userData.wingR.rotation.x = flap;
+  });
+
+  // Animate petals
+  petals.forEach(p => {
+    const u = p.userData;
+    p.position.y -= u.fallSpeed;
+    p.position.x = u.baseX + Math.sin(t * u.swayFreq + u.swayPhase) * u.swayAmp;
+    p.rotation.x += u.rotSpeedX;
+    p.rotation.y += u.rotSpeedY;
+    p.rotation.z += u.rotSpeedZ;
+
+    if (p.position.y < -18) {
+      p.position.y = 18 + Math.random() * 4;
+      p.position.x = (Math.random() - 0.5) * 50;
+      u.baseX = p.position.x;
+      p.position.z = (Math.random() - 0.5) * 40 - 4;
+    }
+  });
+
+  // Drift glows
+  glows.forEach((g, i) => {
+    g.position.x += Math.sin(t * 0.1 + i) * 0.003;
+    g.position.y += Math.cos(t * 0.13 + i) * 0.002;
+  });
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* ============================================================
+   RESIZE
+   ============================================================ */
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============================================================
+   SLIDESHOW NAVIGATION
+   ============================================================ */
+
+/* ============================================================
+   MESSAGE DATA — read from localStorage (set by messages_editor)
+   ============================================================ */
+function loadMessageData() {
+  try {
+    const stored = localStorage.getItem('tori_messages');
+    if (stored) {
+      const data = JSON.parse(stored);
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch(e) {}
+  return [];
+}
+const MESSAGE_DATA = loadMessageData();
+
+/* ── Decorative SVG backgrounds (cycle for slides without image) ── */
+function decorativeSVG(idx) {
+  const gid = 'dg' + idx;
+  const pats = [
+    // Bird
+    `<svg viewBox="0 0 200 240" preserveAspectRatio="xMidYMid slice">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FAE5A0"/><stop offset="100%" stop-color="#F5C6D0"/></linearGradient></defs>
+      <rect width="200" height="240" fill="url(#${gid})"/>
+      <g transform="translate(100 130)" fill="#2C3E50" opacity="0.78">
+        <path d="M-40,-10 Q-30,-30 0,-25 Q30,-30 40,-10 Q35,0 25,-2 L20,15 L10,5 L0,18 L-10,5 L-20,15 L-25,-2 Q-35,0 -40,-10 Z"/>
+        <circle cx="-2" cy="-22" r="3"/></g>
+      <g fill="#FFF" opacity="0.55">
+        <circle cx="30" cy="40" r="4"/><circle cx="170" cy="60" r="3"/>
+        <circle cx="50" cy="200" r="3"/><circle cx="160" cy="210" r="4"/></g></svg>`,
+    // Flowers
+    `<svg viewBox="0 0 200 240" preserveAspectRatio="xMidYMid slice">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#B8DCEC"/><stop offset="100%" stop-color="#F5C6D0"/></linearGradient></defs>
+      <rect width="200" height="240" fill="url(#${gid})"/>
+      <g transform="translate(100 120)">
+        <g fill="#F5C6D0"><ellipse cx="0" cy="-20" rx="10" ry="15"/><ellipse cx="19" cy="-7" rx="15" ry="10"/>
+          <ellipse cx="12" cy="17" rx="10" ry="15"/><ellipse cx="-12" cy="17" rx="10" ry="15"/>
+          <ellipse cx="-19" cy="-7" rx="15" ry="10"/></g>
+        <circle r="8" fill="#FAE5A0"/></g></svg>`,
+    // Two birds + heart
+    `<svg viewBox="0 0 200 240" preserveAspectRatio="xMidYMid slice">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FCE0E5"/><stop offset="100%" stop-color="#FDF0D8"/></linearGradient></defs>
+      <rect width="200" height="240" fill="url(#${gid})"/>
+      <g fill="#2C3E50" opacity="0.78">
+        <g transform="translate(70 120)"><path d="M0,0 L18,-8 L14,2 L20,4 L8,8 L-2,5 Z"/>
+          <circle cx="14" cy="-6" r="1.8" fill="#FFF"/></g>
+        <g transform="translate(130 120) scale(-1 1)"><path d="M0,0 L18,-8 L14,2 L20,4 L8,8 L-2,5 Z"/>
+          <circle cx="14" cy="-6" r="1.8" fill="#FFF"/></g></g>
+      <path d="M100,105 Q95,99 90,103 Q90,109 100,116 Q110,109 110,103 Q105,99 100,105 Z" fill="#FFF" opacity="0.85"/></svg>`,
+    // Sky + sun
+    `<svg viewBox="0 0 200 240" preserveAspectRatio="xMidYMid slice">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#C8E2F0"/><stop offset="60%" stop-color="#F5C6D0"/>
+        <stop offset="100%" stop-color="#FAE5A0"/></linearGradient></defs>
+      <rect width="200" height="240" fill="url(#${gid})"/>
+      <rect y="160" width="200" height="80" fill="#8FC4DC" opacity="0.28"/>
+      <circle cx="100" cy="150" r="24" fill="#FAE5A0" opacity="0.88"/>
+      <g fill="none" stroke="#2C3E50" stroke-width="1.5" opacity="0.55">
+        <path d="M60,85 q5,-6 10,0 q5,-6 10,0"/>
+        <path d="M130,70 q4,-5 8,0 q4,-5 8,0"/></g></svg>`,
+  ];
+  return pats[idx % pats.length];
+}
+
+/* ── Build message slides ── */
+function buildSlides() {
+  const container = document.getElementById('slides');
+  const closingSlide = document.getElementById('slide-closing');
+
+  MESSAGE_DATA.forEach((msg, i) => {
+    const el = document.createElement('div');
+    el.className = 'slide';
+    el.dataset.slide = String(i + 1);
+
+    const isAlt = (i % 2 === 1);
+    const num   = String(i + 1).padStart(2, '0');
+    const total = String(MESSAGE_DATA.length).padStart(2, '0');
+
+    // Escape user content for safe HTML insertion
+    const safeName = msg.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const safeMsg  = msg.message.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    const photoHTML = `
+      <div class="memory-photo">
+        <div class="photo-frame">
+          <div class="photo-inner" style="overflow:hidden;">
+            ${msg.imageData
+              ? `<img src="${msg.imageData}" alt="${safeName}" style="width:100%;height:100%;object-fit:cover;display:block;">`
+              : decorativeSVG(i)
+            }
+          </div>
+          <div class="photo-caption">— from ${safeName} —</div>
+        </div>
+      </div>`;
+
+    const textHTML = `
+      <div class="memory-text">
+        <div class="memory-number">No. ${num} / ${total}</div>
+        <h2 class="memory-title">${safeName}<span class="accent">より</span></h2>
+        <div class="memory-divider"></div>
+        <p class="memory-body" style="white-space:pre-wrap;">${safeMsg}</p>
+      </div>`;
+
+    el.innerHTML = `<div class="memory">${isAlt ? textHTML + photoHTML : photoHTML + textHTML}</div>`;
+    container.insertBefore(el, closingSlide);
+  });
+
+  // Set closing slide index
+  const closingIdx = MESSAGE_DATA.length + 1;
+  closingSlide.dataset.slide = String(closingIdx);
+}
+
+buildSlides();
+
+/* ============================================================
+   SLIDESHOW NAVIGATION (dynamic — runs after buildSlides)
+   ============================================================ */
+const slides = document.querySelectorAll('.slide');
+const totalSlides = slides.length;
+let currentSlide = 0;
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+const counter = document.querySelector('#counter .current');
+const totalEl = document.getElementById('slide-total');
+const dotsContainer = document.getElementById('dots');
+
+totalEl.textContent = String(totalSlides).padStart(2, '0');
+
+// Build dots
+for (let i = 0; i < totalSlides; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.addEventListener('click', () => goTo(i));
+  dotsContainer.appendChild(d);
+}
+const dots = document.querySelectorAll('.dot');
+
+// Camera poses: title | N messages | closing
+const BASE_POSES = [
+  { x: -3, y: 0.8,  z: 18 },
+  { x: 3,  y: -0.4, z: 18 },
+  { x: -2, y: -0.8, z: 19 },
+  { x: 2,  y: 1.0,  z: 18 },
+  { x: -1, y: 0.4,  z: 20 },
+  { x: 1,  y: -0.6, z: 19 },
+];
+function slidePose(idx) {
+  if (idx === 0)                         return { x: 0, y: 0, z: 22 };
+  if (idx === totalSlides - 1)           return { x: 0, y: 0, z: 14 };
+  return BASE_POSES[(idx - 1) % BASE_POSES.length];
+}
+
+// Theme per slide: 0=title, cycle 1-4 for messages, 5=closing
+function slideTheme(idx) {
+  if (idx === 0)              return 0;
+  if (idx === totalSlides - 1) return 5;
+  return 1 + ((idx - 1) % 4);
+}
+
+function goTo(idx) {
+  if (idx < 0 || idx >= totalSlides) return;
+  slides[currentSlide].classList.remove('active');
+  dots[currentSlide].classList.remove('active');
+  currentSlide = idx;
+  slides[currentSlide].classList.add('active');
+  dots[currentSlide].classList.add('active');
+  counter.textContent = String(idx + 1).padStart(2, '0');
+
+  const pose = slidePose(idx);
+  targetCameraX = pose.x;
+  targetCameraY = pose.y;
+  targetCameraZ = pose.z;
+
+  applyTheme(slideTheme(idx));
+
+  prevBtn.disabled = idx === 0;
+  nextBtn.disabled = idx === totalSlides - 1;
+}
+
+prevBtn.addEventListener('click', () => goTo(currentSlide - 1));
+nextBtn.addEventListener('click', () => goTo(currentSlide + 1));
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(currentSlide + 1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(currentSlide - 1); }
+});
+
+// Touch swipe
+let touchStartX = 0;
+window.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+window.addEventListener('touchend', (e) => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 60) {
+    if (dx < 0) goTo(currentSlide + 1);
+    else goTo(currentSlide - 1);
+  }
+}, { passive: true });
+
+prevBtn.disabled = true;
+</script>
+
+</body>
+</html>

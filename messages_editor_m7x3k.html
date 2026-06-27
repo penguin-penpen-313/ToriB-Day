@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EDITOR.EXE — メッセージ編集</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #08080A; --bg-1: #0E1014; --bg-2: #161820; --bg-3: #1F222B;
+    --border: #2A2D34; --border-bright: #3F434E;
+    --amber: #FFA31A; --amber-bright: #FFD93D; --amber-glow: rgba(255,163,26,0.6);
+    --green: #4AE54A; --green-glow: rgba(74,229,74,0.55);
+    --red: #FF3838; --red-glow: rgba(255,56,56,0.6);
+    --sky: #4AC8E5;
+    --text: #E8E6E0; --text-dim: #888B91; --text-mute: #555861;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    background: var(--bg-0); color: var(--text);
+    font-family: 'DotGothic16','VT323',monospace;
+    min-height: 100vh; -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image: repeating-linear-gradient(0deg,rgba(0,0,0,0.14) 0,rgba(0,0,0,0.14) 1px,transparent 1px,transparent 3px);
+    pointer-events:none; z-index:9990; mix-blend-mode:multiply;
+  }
+  body::after {
+    content:''; position:fixed; inset:0;
+    background: radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.5) 100%);
+    pointer-events:none; z-index:9991;
+  }
+  .noise {
+    position:fixed; inset:0; pointer-events:none; z-index:9989; opacity:0.05;
+    background-image:url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.65'/></svg>");
+    animation:noise .6s steps(3) infinite;
+  }
+  @keyframes noise{0%{transform:translate(0,0)}33%{transform:translate(-2px,1px)}66%{transform:translate(1px,-2px)}100%{transform:translate(0,0)}}
+
+  /* ── Top bar ── */
+  .topbar {
+    position:sticky; top:0; z-index:100;
+    background:var(--bg-1); border-bottom:1px solid var(--border);
+    padding:10px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  }
+  .brand { display:flex; flex-direction:column; gap:3px; }
+  .brand-eye { font-family:'Press Start 2P',monospace; font-size:8px; letter-spacing:.4em; color:var(--amber); text-transform:uppercase; }
+  .brand-title { font-family:'Press Start 2P',monospace; font-size:clamp(13px,3vw,18px); color:var(--text); letter-spacing:.1em; text-transform:uppercase; text-shadow:2px 0 rgba(255,56,56,.4),-2px 0 rgba(74,229,74,.4); }
+  .brand-title .amp { color:var(--amber); }
+  .topbar-right { display:flex; gap:8px; flex-wrap:wrap; }
+  .nav-link,.btn-top {
+    padding:8px 14px; font-family:'Press Start 2P',monospace; font-size:9px; letter-spacing:.18em; text-transform:uppercase;
+    cursor:pointer; border:none; text-decoration:none; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; transition:all .1s steps(2);
+  }
+  .nav-link { background:var(--bg-2); color:var(--text-dim); border:1px solid var(--border-bright); }
+  .nav-link:hover { border-color:var(--amber); color:var(--amber); }
+  .btn-top.load { background:var(--bg-2); color:var(--sky); border:1px solid rgba(74,200,229,.4); }
+  .btn-top.load:hover { background:rgba(74,200,229,.12); border-color:var(--sky); }
+  .btn-top.launch {
+    background:var(--amber); color:var(--bg-0);
+    box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px var(--amber),0 0 18px rgba(255,163,26,.35);
+    font-size:10px;
+  }
+  .btn-top.launch:hover { background:var(--amber-bright); box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px var(--amber-bright),0 0 28px rgba(255,217,61,.55); }
+  .btn-top.launch:disabled { background:var(--bg-3); color:var(--text-mute); box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px var(--border); cursor:not-allowed; }
+
+  /* ── Stats bar ── */
+  .statsbar {
+    background:var(--bg-1); border-bottom:1px solid var(--border);
+    padding:7px 20px; display:flex; align-items:center; gap:22px;
+    font-family:'VT323',monospace; font-size:15px; color:var(--text-dim);
+  }
+  .statsbar .val { color:var(--amber); font-family:'Press Start 2P',monospace; font-size:12px; }
+  .statsbar .msg-status { margin-left:auto; font-size:13px; }
+  .statsbar .msg-status.ok { color:var(--green); }
+  .statsbar .msg-status.warn { color:var(--amber); }
+
+  /* ── Main content ── */
+  .content { position:relative; z-index:1; max-width:900px; margin:0 auto; padding:20px 20px 80px; }
+
+  /* Load state */
+  .loading { text-align:center; padding:60px 24px; font-family:'Press Start 2P',monospace; font-size:12px; color:var(--amber); letter-spacing:.3em; animation:lpulse 1s steps(2) infinite; }
+  @keyframes lpulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .empty { text-align:center; padding:60px 24px; font-family:'VT323',monospace; font-size:18px; color:var(--text-mute); letter-spacing:.08em; }
+
+  /* ── Message cards ── */
+  .card-list { display:flex; flex-direction:column; gap:12px; }
+
+  .msg-card {
+    background:var(--bg-1); border:1px solid var(--border);
+    position:relative; transition:border-color .1s steps(2);
+  }
+  .msg-card.has-image { border-color:rgba(255,163,26,.3); }
+
+  .card-head {
+    background:var(--bg-2); border-bottom:1px solid var(--border);
+    padding:7px 12px; display:flex; align-items:center; gap:10px;
+  }
+  .card-idx { font-family:'Press Start 2P',monospace; font-size:10px; color:var(--amber); flex-shrink:0; min-width:36px; text-shadow:0 0 6px var(--amber-glow); }
+  .card-orig-name { font-family:'VT323',monospace; font-size:15px; color:var(--text-dim); letter-spacing:.05em; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .card-time { font-family:'VT323',monospace; font-size:13px; color:var(--text-mute); flex-shrink:0; }
+  .card-actions { display:flex; gap:4px; flex-shrink:0; }
+  .ic-btn {
+    width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+    background:transparent; border:1px solid var(--border-bright); color:var(--text-dim);
+    cursor:pointer; font-size:14px; transition:all .1s steps(2);
+  }
+  .ic-btn:hover { background:var(--bg-3); border-color:var(--text-dim); color:var(--text); }
+  .ic-btn.up:hover { border-color:var(--sky); color:var(--sky); }
+  .ic-btn.dn:hover { border-color:var(--sky); color:var(--sky); }
+  .ic-btn.del { color:var(--red); border-color:rgba(255,56,56,.3); }
+  .ic-btn.del:hover { background:rgba(255,56,56,.1); border-color:var(--red); }
+  .ic-btn:disabled { opacity:.25; cursor:not-allowed; }
+
+  .card-body { padding:14px; display:flex; gap:14px; }
+
+  /* Image side */
+  .img-side { flex-shrink:0; width:80px; }
+  .img-thumb { width:80px; height:80px; object-fit:cover; border:1px solid var(--amber); display:block; }
+  .no-img-box {
+    width:80px; height:80px; background:var(--bg-2); border:1px dashed var(--border-bright);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'VT323',monospace; font-size:12px; color:var(--text-mute); text-align:center;
+  }
+  .img-tag { font-family:'VT323',monospace; font-size:11px; color:var(--green); letter-spacing:.1em; margin-top:4px; }
+
+  /* Edit side */
+  .edit-side { flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
+
+  .field-label { font-family:'VT323',monospace; font-size:14px; color:var(--amber); letter-spacing:.08em; margin-bottom:3px; }
+  .field-label::before { content:'> '; color:var(--green); }
+
+  .edit-name {
+    width:100%; background:var(--bg-0); border:1px solid var(--border-bright);
+    color:var(--text); font-family:'DotGothic16',monospace; font-size:16px;
+    padding:8px 10px; outline:none; caret-color:var(--amber);
+    transition:border-color .1s steps(2);
+  }
+  .edit-name:focus { border-color:var(--amber); }
+
+  .edit-msg {
+    width:100%; background:var(--bg-0); border:1px solid var(--border-bright);
+    color:var(--text); font-family:'DotGothic16',monospace; font-size:14px;
+    padding:10px 10px; outline:none; caret-color:var(--amber); resize:vertical;
+    min-height:90px; line-height:1.7; transition:border-color .1s steps(2);
+  }
+  .edit-msg:focus { border-color:var(--amber); }
+
+  .char-info { display:flex; justify-content:space-between; font-family:'VT323',monospace; font-size:13px; color:var(--text-mute); }
+  .char-info .cnt { }
+  .char-info .cnt.warn { color:var(--amber); }
+  .char-info .cnt.over { color:var(--red); }
+
+  /* ── Bottom bar ── */
+  .bottombar {
+    position:fixed; bottom:0; left:0; right:0; z-index:100;
+    background:var(--bg-1); border-top:1px solid var(--border);
+    padding:10px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  .bottombar .hint { font-family:'VT323',monospace; font-size:14px; color:var(--text-dim); flex:1; }
+  .btn-copy {
+    padding:10px 18px; background:var(--bg-2); color:var(--text-dim);
+    border:1px solid var(--border-bright); font-family:'Press Start 2P',monospace;
+    font-size:9px; letter-spacing:.18em; cursor:pointer; text-transform:uppercase;
+    transition:all .1s steps(2);
+  }
+  .btn-copy:hover { border-color:var(--sky); color:var(--sky); }
+  .btn-launch-main {
+    padding:12px 22px; background:var(--amber); color:var(--bg-0);
+    border:none; font-family:'Press Start 2P',monospace; font-size:11px;
+    letter-spacing:.18em; cursor:pointer; text-transform:uppercase;
+    box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px var(--amber),0 0 20px rgba(255,163,26,.4);
+    transition:all .1s steps(2);
+  }
+  .btn-launch-main:hover { background:var(--amber-bright); }
+  .btn-launch-main:disabled { background:var(--bg-3); color:var(--text-mute); cursor:not-allowed; box-shadow:none; }
+
+  /* Toast */
+  .toast {
+    position:fixed; bottom:70px; left:50%; transform:translate(-50%,60px);
+    background:var(--bg-0); border:1px solid var(--amber); color:var(--amber);
+    padding:10px 20px; font-family:'DotGothic16',monospace; font-size:14px;
+    transition:transform .2s steps(4); z-index:9000;
+    box-shadow:0 0 24px rgba(255,163,26,.35),0 0 0 2px var(--bg-0); white-space:nowrap;
+  }
+  .toast.show { transform:translate(-50%,0); }
+  .toast.ok { border-color:var(--green); color:var(--green); }
+  .toast::before { content:'► '; }
+  .toast.ok::before { content:'✓ '; }
+
+  .credits { position:fixed; bottom:54px; right:16px; font-family:'VT323',monospace; font-size:11px; color:var(--text-mute); letter-spacing:.18em; pointer-events:none; z-index:50; }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-eye">▸ ADMIN EDITOR ◂</div>
+    <div class="brand-title">MESSAGES <span class="amp">::</span> EDIT</div>
+  </div>
+  <div class="topbar-right">
+    <a href="panel_m7x3k.html" class="nav-link">[ ← PANEL ]</a>
+    <button class="btn-top load" onclick="loadMessages()">↺ RELOAD</button>
+    <button class="btn-top launch" id="launchTopBtn" onclick="launchSlideshow()" disabled>▶ LAUNCH SLIDESHOW</button>
+  </div>
+</div>
+
+<!-- Stats bar -->
+<div class="statsbar">
+  <span>MESSAGES: <span class="val" id="statTotal">--</span></span>
+  <span>WITH IMAGE: <span class="val" style="color:var(--green)" id="statImg">--</span></span>
+  <span class="msg-status" id="msgStatus">// loading...</span>
+</div>
+
+<!-- Cards -->
+<div class="content">
+  <div id="cardContainer">
+    <div class="loading">LOADING FROM FIRESTORE...</div>
+  </div>
+</div>
+
+<!-- Bottom bar -->
+<div class="bottombar">
+  <span class="hint">// 編集後に「LAUNCH SLIDESHOW」でスライドショーを起動</span>
+  <button class="btn-copy" onclick="copyJSON()">COPY JSON</button>
+  <button class="btn-launch-main" id="launchBtn" onclick="launchSlideshow()" disabled>▶ SAVE &amp; LAUNCH SLIDESHOW</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="credits">▸ PRODUCED BY PENPEN ◂</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCLvalYsoPBnG40Ca7bpuIsUwNc7Qux9E",
+    authDomain: "queue-tori.firebaseapp.com",
+    projectId: "queue-tori",
+    storageBucket: "queue-tori.firebasestorage.app",
+    messagingSenderId: "608324516122",
+    appId: "1:608324516122:web:f1e511722e96945e9514a3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const messagesRef = collection(db, 'messages');
+
+  // Working copy of messages (editable)
+  let msgs = [];
+
+  function formatTime(ts) {
+    if (!ts || !ts.toDate) return '';
+    const d = ts.toDate();
+    const p = n => String(n).padStart(2,'0');
+    return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Render cards ── */
+  function render() {
+    const container = document.getElementById('cardContainer');
+    const total = msgs.length;
+    const withImg = msgs.filter(m => m.imageData).length;
+
+    document.getElementById('statTotal').textContent = String(total).padStart(2,'0');
+    document.getElementById('statImg').textContent   = String(withImg).padStart(2,'0');
+
+    const status = document.getElementById('msgStatus');
+    if (total === 0) {
+      status.textContent = '// no messages yet';
+      status.className = 'msg-status warn';
+    } else {
+      status.textContent = `// ${total} messages ready`;
+      status.className = 'msg-status ok';
+    }
+
+    // Enable/disable launch buttons
+    const canLaunch = total > 0;
+    document.getElementById('launchBtn').disabled    = !canLaunch;
+    document.getElementById('launchTopBtn').disabled = !canLaunch;
+
+    if (total === 0) {
+      container.innerHTML = '<div class="empty">// Firestoreにメッセージがありません</div>';
+      return;
+    }
+
+    container.innerHTML = `<div class="card-list" id="cardList">
+      ${msgs.map((m, i) => buildCard(m, i, total)).join('')}
+    </div>`;
+
+    // Attach listeners to editable fields
+    msgs.forEach((m, i) => {
+      const nameEl = document.getElementById(`name-${i}`);
+      const msgEl  = document.getElementById(`msg-${i}`);
+      const nameCnt= document.getElementById(`ncnt-${i}`);
+      const msgCnt = document.getElementById(`mcnt-${i}`);
+
+      nameEl.addEventListener('input', () => {
+        msgs[i].name = nameEl.value;
+        const len = nameEl.value.length;
+        nameCnt.textContent = `${String(len).padStart(2,'0')}/20`;
+        nameCnt.className = 'cnt' + (len >= 20 ? ' over' : len >= 16 ? ' warn' : '');
+      });
+      msgEl.addEventListener('input', () => {
+        msgs[i].message = msgEl.value;
+        const len = msgEl.value.length;
+        msgCnt.textContent = `${String(len).padStart(4,'0')}/0400`;
+        msgCnt.className = 'cnt' + (len >= 400 ? ' over' : len >= 360 ? ' warn' : '');
+      });
+    });
+  }
+
+  function buildCard(m, i, total) {
+    const num = String(i + 1).padStart(2,'0');
+    const imgBlock = m.imageData
+      ? `<img class="img-thumb" src="${escHtml(m.imageData)}" alt="${escHtml(m.name)}">
+         <div class="img-tag">// ICON</div>`
+      : `<div class="no-img-box">NO<br>IMG</div>`;
+
+    const namelen = (m.name || '').length;
+    const msglen  = (m.message || '').length;
+    const ncls = namelen >= 20 ? ' over' : namelen >= 16 ? ' warn' : '';
+    const mcls = msglen  >= 400 ? ' over' : msglen  >= 360 ? ' warn' : '';
+
+    return `
+    <div class="msg-card ${m.imageData ? 'has-image' : ''}">
+      <div class="card-head">
+        <span class="card-idx">${num}</span>
+        <span class="card-orig-name">元: ${escHtml(m._origName || m.name)}</span>
+        <span class="card-time">${escHtml(m._time || '')}</span>
+        <div class="card-actions">
+          <button class="ic-btn up" onclick="moveUp(${i})" ${i === 0 ? 'disabled' : ''} title="上へ">↑</button>
+          <button class="ic-btn dn" onclick="moveDown(${i})" ${i === total-1 ? 'disabled' : ''} title="下へ">↓</button>
+          <button class="ic-btn del" onclick="deleteCard(${i})" title="削除">✕</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="img-side">${imgBlock}</div>
+        <div class="edit-side">
+          <div>
+            <div class="field-label">NAME (スライドに表示する名前)</div>
+            <input class="edit-name" id="name-${i}" type="text" maxlength="20" value="${escHtml(m.name || '')}">
+            <div class="char-info"><span class="cnt${ncls}" id="ncnt-${i}">${String(namelen).padStart(2,'0')}/20</span></div>
+          </div>
+          <div>
+            <div class="field-label">MESSAGE (スライドに表示する本文)</div>
+            <textarea class="edit-msg" id="msg-${i}" maxlength="400">${escHtml(m.message || '')}</textarea>
+            <div class="char-info"><span class="cnt${mcls}" id="mcnt-${i}">${String(msglen).padStart(4,'0')}/0400</span></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  /* ── Actions ── */
+  window.moveUp = function(i) {
+    if (i <= 0) return;
+    [msgs[i-1], msgs[i]] = [msgs[i], msgs[i-1]];
+    // Preserve edits from DOM before re-render
+    syncFromDOM();
+    render();
+  };
+
+  window.moveDown = function(i) {
+    if (i >= msgs.length - 1) return;
+    syncFromDOM();
+    [msgs[i], msgs[i+1]] = [msgs[i+1], msgs[i]];
+    render();
+  };
+
+  window.deleteCard = function(i) {
+    if (!confirm(`「${msgs[i].name}」のメッセージを削除しますか？`)) return;
+    syncFromDOM();
+    msgs.splice(i, 1);
+    render();
+    showToast('削除しました');
+  };
+
+  function syncFromDOM() {
+    msgs.forEach((m, i) => {
+      const nameEl = document.getElementById(`name-${i}`);
+      const msgEl  = document.getElementById(`msg-${i}`);
+      if (nameEl) m.name    = nameEl.value;
+      if (msgEl)  m.message = msgEl.value;
+    });
+  }
+
+  /* ── Load from Firestore ── */
+  window.loadMessages = async function() {
+    document.getElementById('cardContainer').innerHTML = '<div class="loading">LOADING...</div>';
+    document.getElementById('statTotal').textContent = '--';
+    document.getElementById('statImg').textContent   = '--';
+    document.getElementById('msgStatus').textContent = '// connecting...';
+    document.getElementById('launchBtn').disabled    = true;
+    document.getElementById('launchTopBtn').disabled = true;
+
+    try {
+      const snap = await getDocs(query(messagesRef, orderBy('createdAt', 'asc')));
+      msgs = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          name:      data.name    || '',
+          message:   data.message || '',
+          imageData: data.imageData || null,
+          _origName: data.name    || '',
+          _time:     formatTime(data.createdAt),
+        };
+      });
+      render();
+      if (msgs.length > 0) showToast(`${msgs.length}件を読み込みました`, true);
+    } catch(err) {
+      console.error(err);
+      document.getElementById('cardContainer').innerHTML = `<div class="empty">// ERROR: ${err.message}</div>`;
+      document.getElementById('msgStatus').textContent = '// connection failed';
+    }
+  };
+
+  /* ── Save to localStorage & launch slideshow ── */
+  window.launchSlideshow = function() {
+    syncFromDOM();
+
+    // Build clean array for slideshow
+    const data = msgs.map(m => ({
+      name:      m.name.trim()    || '名無し',
+      message:   m.message.trim() || '',
+      imageData: m.imageData || null,
+    })).filter(m => m.name || m.message);
+
+    if (data.length === 0) {
+      showToast('メッセージがありません');
+      return;
+    }
+
+    try {
+      localStorage.setItem('tori_messages', JSON.stringify(data));
+      showToast(`${data.length}件を保存 → スライドショーを起動`, true);
+      setTimeout(() => {
+        window.open('birthday_slideshow.html', '_blank');
+      }, 400);
+    } catch(err) {
+      console.error(err);
+      showToast('保存失敗: ' + err.message);
+    }
+  };
+
+  /* ── Copy JSON to clipboard ── */
+  window.copyJSON = function() {
+    syncFromDOM();
+    const data = msgs.map(m => ({
+      name:      m.name.trim(),
+      message:   m.message.trim(),
+      imageData: m.imageData || null,
+    }));
+    const json = JSON.stringify(data, null, 2);
+    navigator.clipboard.writeText(json).then(() => {
+      showToast('JSONをクリップボードにコピーしました', true);
+    }).catch(() => {
+      showToast('コピー失敗');
+    });
+  };
+
+  /* ── Toast ── */
+  window.showToast = function(msg, isOk = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isOk ? ' ok' : '');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  };
+
+  // Auto-load on open
+  loadMessages();
+</script>
+</body>
+</html>

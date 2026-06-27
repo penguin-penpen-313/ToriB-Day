@@ -432,7 +432,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+  // (Firebase Storage not used — images compressed client-side and stored in Firestore)
 
   const firebaseConfig = {
     apiKey: "AIzaSyDCLvalYsoPBnG40Ca7bpuIsUwNc7Qux9E",
@@ -445,7 +445,7 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-  const storage = getStorage(app);
+
   const messagesRef = collection(db, 'messages');
 
   const params = new URLSearchParams(window.location.search);
@@ -478,7 +478,7 @@
       nameLabelHtml:  'YOUR NAME <span class="hint">(REALITY名)</span>',
       namePlaceholder:'例：とりひめ',
       msgLabelHtml:   'MESSAGE <span class="hint">(伝えたい想い)</span>',
-      msgPlaceholder: '🎂🐥✨ お誕生日おめでとうございます！！',
+      msgPlaceholder: '🎂✨ お誕生日おめでとうございます！！\n🐦💛 とりひめさんが大好き！！\nこれからも一緒に盛り上がろうね🎉🌟',
       imgLabel:       'REALITYのアイコンを添付 <span class="hint">(任意 · JPEG/PNG · 3MB以下)</span>',
       attachBtnText:  'REALITYのアイコンを添付',
       imgStatusReady: '// READY TO ATTACH',
@@ -507,7 +507,7 @@
       nameLabelHtml:  'YOUR NAME <span class="hint">(REALITY name)</span>',
       namePlaceholder:'e.g. torihime',
       msgLabelHtml:   'MESSAGE <span class="hint">(your wishes)</span>',
-      msgPlaceholder: '🎂🐥✨ HAPPY BIRTHDAY!!',
+      msgPlaceholder: '🎂✨ HAPPY BIRTHDAY!!\n🐦💛 You are amazing, Torihime-san!!\nKeep shining always 🎉🌟',
       imgLabel:       'Attach your REALITY icon <span class="hint">(optional · JPEG/PNG · max 3MB)</span>',
       attachBtnText:  'Attach your REALITY icon',
       imgStatusReady: '// READY TO ATTACH',
@@ -628,35 +628,27 @@
     document.getElementById('imagePreviewImg').src = '';
   };
 
-  // Upload image to Firebase Storage
-  async function uploadImage(file) {
+  // Compress image client-side with Canvas — no CORS, no Storage needed
+  async function compressImage(file) {
     return new Promise((resolve, reject) => {
-      const ext = file.name.split('.').pop();
-      const filename = `message-icons/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const imgRef = storageRef(storage, filename);
-      const uploadTask = uploadBytesResumable(imgRef, file);
-
-      const progressEl = document.getElementById('uploadProgress');
-      const barEl = document.getElementById('uploadBar');
-      const labelEl = document.getElementById('uploadLabel');
-      progressEl.classList.add('show');
-      labelEl.textContent = T[lang].uploadingText;
-
-      uploadTask.on('state_changed',
-        (snapshot) => {
-          const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          barEl.style.width = pct + '%';
-        },
-        (error) => {
-          progressEl.classList.remove('show');
-          reject(error);
-        },
-        async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          progressEl.classList.remove('show');
-          resolve(url);
-        }
-      );
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 480;
+          let w = img.width, h = img.height;
+          if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+          else        { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
   }
 
@@ -680,15 +672,16 @@
     sendBtn.textContent = t.sending;
 
     try {
-      let imageUrl = null;
+      let imageData = null;
       if (selectedImageFile) {
-        imageUrl = await uploadImage(selectedImageFile);
+        sendBtn.textContent = 'COMPRESSING...';
+        imageData = await compressImage(selectedImageFile);
       }
 
       await addDoc(messagesRef, {
         name,
         message,
-        imageUrl: imageUrl || null,
+        imageData: imageData || null,
         createdAt: serverTimestamp()
       });
 

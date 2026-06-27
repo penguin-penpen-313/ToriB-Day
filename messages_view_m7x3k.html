@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MESSAGES.EXE — メッセージ一覧</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #08080A;
+    --bg-1: #0E1014;
+    --bg-2: #161820;
+    --bg-3: #1F222B;
+    --border: #2A2D34;
+    --border-bright: #3F434E;
+    --amber: #FFA31A;
+    --amber-bright: #FFD93D;
+    --amber-glow: rgba(255, 163, 26, 0.6);
+    --green: #4AE54A;
+    --green-glow: rgba(74, 229, 74, 0.55);
+    --red: #FF3838;
+    --red-glow: rgba(255, 56, 56, 0.6);
+    --sky: #4AC8E5;
+    --text: #E8E6E0;
+    --text-dim: #888B91;
+    --text-mute: #555861;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: var(--bg-0);
+    color: var(--text);
+    font-family: 'DotGothic16', 'VT323', monospace;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.14) 0px, rgba(0,0,0,0.14) 1px, transparent 1px, transparent 3px);
+    pointer-events: none; z-index: 9990; mix-blend-mode: multiply;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.55) 100%);
+    pointer-events: none; z-index: 9991;
+  }
+  .noise {
+    position: fixed; inset: 0; pointer-events: none; z-index: 9989; opacity: 0.05;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.65'/></svg>");
+    animation: noiseShift 0.6s steps(3) infinite;
+  }
+  @keyframes noiseShift { 0%{transform:translate(0,0)} 33%{transform:translate(-2px,1px)} 66%{transform:translate(1px,-2px)} 100%{transform:translate(0,0)} }
+
+  @keyframes bootIn {
+    0%   { opacity: 0; transform: translateY(6px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== Topbar ===== */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--bg-1); border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .topbar-left { display: flex; flex-direction: column; gap: 2px; }
+  .topbar-eyebrow {
+    font-family: 'Press Start 2P', monospace; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--amber); text-transform: uppercase;
+    text-shadow: 0 0 8px var(--amber-glow);
+  }
+  .topbar-title {
+    font-family: 'Press Start 2P', monospace; font-size: clamp(13px, 3vw, 18px);
+    letter-spacing: 0.1em; color: var(--text); text-transform: uppercase;
+    text-shadow: 2px 0 rgba(255,56,56,0.4), -2px 0 rgba(74,229,74,0.4);
+  }
+  .topbar-right { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .nav-link, .btn-action {
+    padding: 8px 14px;
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    cursor: pointer; border: none; transition: all 0.1s steps(2);
+    text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+  }
+  .nav-link { background: var(--bg-2); color: var(--text-dim); border: 1px solid var(--border-bright); }
+  .nav-link:hover { border-color: var(--amber); color: var(--amber); }
+
+  .btn-action.refresh { background: var(--bg-2); color: var(--sky); border: 1px solid rgba(74,200,229,0.4); }
+  .btn-action.refresh:hover { background: rgba(74,200,229,0.12); border-color: var(--sky); }
+
+  .btn-action.print-btn { background: var(--amber); color: var(--bg-0); border: 1px solid var(--amber); box-shadow: 0 0 12px rgba(255,163,26,0.3); }
+  .btn-action.print-btn:hover { background: var(--amber-bright); }
+
+  /* Stats bar */
+  .stats-bar {
+    background: var(--bg-1); border-bottom: 1px solid var(--border);
+    padding: 8px 20px;
+    display: flex; align-items: center; gap: 20px;
+    font-family: 'VT323', monospace; font-size: 15px; color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+  .stats-bar .val { color: var(--amber); font-family: 'Press Start 2P', monospace; font-size: 13px; }
+  .stats-bar .img-count { color: var(--green); }
+
+  /* ===== Content ===== */
+  .content {
+    position: relative; z-index: 1;
+    max-width: 1200px; margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+
+  /* Loading state */
+  .loading-state {
+    text-align: center; padding: 80px 24px;
+    font-family: 'Press Start 2P', monospace; font-size: 12px;
+    color: var(--amber); letter-spacing: 0.3em;
+    animation: loadPulse 1s steps(2) infinite;
+  }
+  @keyframes loadPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  .empty-state {
+    text-align: center; padding: 80px 24px;
+    font-family: 'VT323', monospace; font-size: 18px;
+    color: var(--text-mute); letter-spacing: 0.08em;
+  }
+
+  /* ===== Message cards grid ===== */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+  @media (max-width: 400px) {
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+
+  .msg-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    position: relative;
+    animation: bootIn 0.3s ease both;
+    transition: border-color 0.15s steps(2);
+  }
+  .msg-card:hover { border-color: var(--border-bright); }
+  .msg-card.has-image { border-color: rgba(255,163,26,0.35); }
+  .msg-card.has-image:hover { border-color: var(--amber); }
+
+  /* Card header */
+  .card-head {
+    background: var(--bg-2); border-bottom: 1px solid var(--border);
+    padding: 8px 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .card-num {
+    font-family: 'Press Start 2P', monospace; font-size: 11px;
+    color: var(--amber); letter-spacing: 0.1em; flex-shrink: 0;
+    text-shadow: 0 0 6px var(--amber-glow);
+  }
+  .card-name {
+    font-family: 'DotGothic16', monospace; font-size: 16px;
+    color: var(--text); letter-spacing: 0.04em; flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .card-time {
+    font-family: 'VT323', monospace; font-size: 13px;
+    color: var(--text-mute); letter-spacing: 0.06em; flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* Card body */
+  .card-body { padding: 14px; display: flex; gap: 14px; align-items: flex-start; }
+  .card-body.no-image { display: block; }
+
+  /* Image thumb */
+  .img-thumb-wrap { flex-shrink: 0; }
+  .img-thumb {
+    width: 80px; height: 80px; object-fit: cover;
+    border: 1px solid var(--amber);
+    cursor: pointer;
+    transition: all 0.1s steps(2);
+    display: block;
+    image-rendering: auto;
+  }
+  .img-thumb:hover {
+    border-color: var(--amber-bright);
+    box-shadow: 0 0 14px var(--amber-glow);
+    transform: scale(1.04);
+  }
+  .img-label {
+    font-family: 'VT323', monospace; font-size: 11px;
+    color: var(--green); letter-spacing: 0.1em; margin-top: 4px;
+    text-align: center;
+  }
+
+  /* Message text */
+  .card-message {
+    font-family: 'DotGothic16', monospace; font-size: 14px;
+    color: var(--text); line-height: 1.85; letter-spacing: 0.04em;
+    white-space: pre-wrap; word-break: break-word;
+    flex: 1; min-width: 0;
+  }
+
+  /* ===== Image modal ===== */
+  .img-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.15s steps(2);
+  }
+  .img-modal-backdrop.show { opacity: 1; pointer-events: auto; }
+  .img-modal {
+    position: relative;
+    max-width: min(90vw, 600px);
+    max-height: 85vh;
+  }
+  .img-modal img {
+    max-width: 100%; max-height: 80vh;
+    border: 2px solid var(--amber);
+    box-shadow: 0 0 60px rgba(255,163,26,0.45);
+    display: block;
+  }
+  .img-modal-name {
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    color: var(--amber); letter-spacing: 0.2em; text-align: center;
+    margin-top: 10px;
+  }
+  .img-modal-close {
+    position: absolute; top: -14px; right: -14px;
+    background: var(--red); color: #fff;
+    border: none; font-family: 'Press Start 2P', monospace; font-size: 11px;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.1s steps(2);
+  }
+  .img-modal-close:hover { background: #ff6060; }
+
+  /* ===== Credits ===== */
+  .credits {
+    position: fixed; bottom: 8px; right: 16px;
+    font-family: 'VT323', monospace; font-size: 12px;
+    color: var(--text-mute); letter-spacing: 0.18em;
+    pointer-events: none; z-index: 50;
+  }
+
+  /* ===== PRINT STYLES ===== */
+  @media print {
+    * { animation: none !important; transition: none !important; }
+    body { background: #fff !important; color: #000 !important; font-family: 'Helvetica Neue', sans-serif; }
+    body::before, body::after, .noise, .credits { display: none !important; }
+    .topbar, .stats-bar { display: none !important; }
+
+    .content { padding: 0; max-width: 100%; }
+    .cards-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+    .msg-card {
+      background: #fff !important; border: 1.5px solid #ccc !important;
+      break-inside: avoid; page-break-inside: avoid;
+      color: #000 !important;
+    }
+    .msg-card.has-image { border-color: #E8A820 !important; }
+
+    .card-head { background: #f5f5f5 !important; border-bottom-color: #ddd !important; }
+    .card-num { color: #c07800 !important; text-shadow: none !important; }
+    .card-name { color: #111 !important; }
+    .card-time { color: #666 !important; }
+    .card-message { color: #222 !important; }
+    .img-label { color: #666 !important; }
+
+    .img-thumb { border-color: #E8A820 !important; width: 72px !important; height: 72px !important; }
+    .img-modal-backdrop { display: none !important; }
+
+    @page {
+      margin: 16mm 12mm;
+      size: A4;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-eyebrow">▸ ADMIN VIEWER ◂</div>
+    <div class="topbar-title">MESSAGES <span style="color:var(--amber)">::</span> VIEW</div>
+  </div>
+  <div class="topbar-right">
+    <a href="panel_m7x3k.html" class="nav-link">[ ← PANEL ]</a>
+    <a href="index.html" class="nav-link">[ 予約 ]</a>
+    <button class="btn-action refresh" onclick="loadMessages()">↺ RELOAD</button>
+    <button class="btn-action print-btn" onclick="window.print()">🖨 PRINT</button>
+  </div>
+</div>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+  <span>TOTAL: <span class="val" id="statTotal">--</span></span>
+  <span>WITH IMAGE: <span class="val img-count" id="statImages">--</span></span>
+  <span id="lastLoaded" style="margin-left:auto;font-size:13px;"></span>
+</div>
+
+<!-- Cards -->
+<div class="content">
+  <div id="cardContainer">
+    <div class="loading-state">LOADING MESSAGES...</div>
+  </div>
+</div>
+
+<!-- Image modal -->
+<div class="img-modal-backdrop" id="imgModal" onclick="closeModal(event)">
+  <div class="img-modal">
+    <button class="img-modal-close" onclick="closeImgModal()">✕</button>
+    <img id="modalImg" src="" alt="full size" />
+    <div class="img-modal-name" id="modalName"></div>
+  </div>
+</div>
+
+<div class="credits">▸ PRODUCED BY PENPEN ◂</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCLvalYsoPBnG40Ca7bpuIsUwNc7Qux9E",
+    authDomain: "queue-tori.firebaseapp.com",
+    projectId: "queue-tori",
+    storageBucket: "queue-tori.firebasestorage.app",
+    messagingSenderId: "608324516122",
+    appId: "1:608324516122:web:f1e511722e96945e9514a3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const messagesRef = collection(db, 'messages');
+
+  function formatTime(ts) {
+    if (!ts || !ts.toDate) return '——';
+    const d = ts.toDate();
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div'); d.textContent = str; return d.innerHTML;
+  }
+
+  function buildCard(data, index) {
+    const hasImage = !!(data.imageData);
+    const num = String(index + 1).padStart(3, '0');
+    const imgBlock = hasImage ? `
+      <div class="img-thumb-wrap">
+        <img class="img-thumb" src="${data.imageData}"
+          alt="${escapeHtml(data.name)}"
+          onclick="openImgModal('${data.imageData.replace(/'/g,"\\'")}', '${escapeHtml(data.name).replace(/'/g,"\\'")}')">
+        <div class="img-label">// ICON</div>
+      </div>` : '';
+
+    return `
+      <div class="msg-card ${hasImage ? 'has-image' : ''}">
+        <div class="card-head">
+          <span class="card-num">${num}</span>
+          <span class="card-name">${escapeHtml(data.name)}</span>
+          <span class="card-time">${formatTime(data.createdAt)}</span>
+        </div>
+        <div class="card-body ${hasImage ? '' : 'no-image'}">
+          ${imgBlock}
+          <div class="card-message">${escapeHtml(data.message || '')}</div>
+        </div>
+      </div>`;
+  }
+
+  window.loadMessages = async function() {
+    const container = document.getElementById('cardContainer');
+    container.innerHTML = '<div class="loading-state">LOADING...</div>';
+
+    try {
+      const snap = await getDocs(query(messagesRef, orderBy('createdAt', 'asc')));
+
+      if (snap.empty) {
+        container.innerHTML = '<div class="empty-state">// no messages yet —</div>';
+        document.getElementById('statTotal').textContent = '00';
+        document.getElementById('statImages').textContent = '00';
+        return;
+      }
+
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const imgCount = docs.filter(d => !!d.imageData).length;
+
+      document.getElementById('statTotal').textContent = String(docs.length).padStart(2, '0');
+      document.getElementById('statImages').textContent = String(imgCount).padStart(2, '0');
+
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      document.getElementById('lastLoaded').textContent =
+        `last loaded: ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+      container.innerHTML = `<div class="cards-grid">${docs.map((d, i) => buildCard(d, i)).join('')}</div>`;
+
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = '<div class="empty-state">// ERROR: ' + err.message + '</div>';
+    }
+  };
+
+  // Image modal
+  window.openImgModal = function(src, name) {
+    document.getElementById('modalImg').src = src;
+    document.getElementById('modalName').textContent = name;
+    document.getElementById('imgModal').classList.add('show');
+  };
+  window.closeImgModal = function() {
+    document.getElementById('imgModal').classList.remove('show');
+    document.getElementById('modalImg').src = '';
+  };
+  window.closeModal = function(e) {
+    if (e.target.id === 'imgModal') closeImgModal();
+  };
+
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeImgModal(); });
+
+  // Auto-load on page open
+  loadMessages();
+</script>
+</body>
+</html>
