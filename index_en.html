@@ -730,7 +730,7 @@
     </div>
     <div class="panel-body">
       <div class="input-group">
-        <label class="input-label" for="nameInput">YOUR NAME (REALITY名)</label>
+        <label class="input-label" for="nameInput">YOUR NAME (REALITY name)</label>
         <div class="input-wrap">
           <input type="text" id="nameInput" placeholder="e.g. torihime" maxlength="20" autocomplete="off" />
         </div>
@@ -740,8 +740,7 @@
         <button class="btn-primary" onclick="onReserveClick()">
           <span class="arrow">▶</span> Reserve
         </button>
-        <button class="btn-secondary" onclick="toggleQueue()">[ QUEUE ]</button>
-        <button class="btn-secondary" onclick="navTo(event, 'display.html')">[ DISPLAY ]</button>
+        <button class="btn-secondary" style="grid-column:1/-1;" onclick="navTo(event, 'display.html')">[ DISPLAY QUEUE ]</button>
       </div>
 
       <button class="btn-message-only" onclick="goToMessageOnly()">Message only · no reservation</button>
@@ -749,7 +748,7 @@
   </div>
 
   <!-- Queue panel -->
-  <div class="queue-panel" id="queuePanel">
+  <div class="queue-panel visible" id="queuePanel">
     <div class="panel">
       <div class="panel-head">
         CURRENT QUEUE [<span id="countBadge">0</span>]
@@ -792,12 +791,12 @@
   import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyDCLvalYsoPBnG40Ca7bpuIsUwNc7Qux9E",
-    authDomain: "queue-tori.firebaseapp.com",
-    projectId: "queue-tori",
-    storageBucket: "queue-tori.firebasestorage.app",
-    messagingSenderId: "608324516122",
-    appId: "1:608324516122:web:f1e511722e96945e9514a3"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.firebasestorage.app",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -855,7 +854,6 @@
       const maxOrder = queueData.length > 0 ? Math.max(...queueData.map(d => d.order)) : 0;
       await addDoc(queueRef, { name, order: maxOrder + 1, createdAt: serverTimestamp() });
       document.getElementById('nameInput').value = '';
-      document.getElementById('queuePanel').classList.add('visible');
       if (wantsToSendMessage) {
         const overlay = document.getElementById('transitionOverlay');
         overlay.classList.add('active');
@@ -874,7 +872,6 @@
     navTo(null, 'message.html' + param);
   };
 
-  window.toggleQueue = function() { document.getElementById('queuePanel').classList.toggle('visible'); };
 
   function renderQueue() {
     const list = document.getElementById('queueList');

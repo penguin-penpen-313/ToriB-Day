@@ -488,11 +488,169 @@
     color: var(--text-mute); letter-spacing: 0.18em;
     pointer-events: none; z-index: 50; white-space: nowrap;
   }
+
+  /* ===== CALL TRANSITION — REPO Extraction-Point style ===== */
+  .call-overlay {
+    position: fixed; inset: 0; z-index: 9500;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .call-overlay.active { opacity: 1; }
+
+  /* Top + bottom shutters */
+  .shutter {
+    position: absolute;
+    left: 0; right: 0;
+    height: 50vh;
+    background: var(--bg-0);
+    background-image:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 4px),
+      linear-gradient(180deg, #000 0%, #1a1a1f 50%, #000 100%);
+    border-color: var(--amber);
+    box-shadow: 0 0 30px var(--amber-glow);
+  }
+  .shutter.top    { top:    -50vh; border-bottom: 3px solid var(--amber); }
+  .shutter.bottom { bottom: -50vh; border-top:    3px solid var(--amber); }
+
+  .call-overlay.active .shutter.top    { animation: shutterDown 1.3s steps(8) forwards; }
+  .call-overlay.active .shutter.bottom { animation: shutterUp   1.3s steps(8) forwards; }
+
+  @keyframes shutterDown {
+    0%   { transform: translateY(0);    }
+    40%  { transform: translateY(100%); }
+    65%  { transform: translateY(100%); }
+    100% { transform: translateY(0);    }
+  }
+  @keyframes shutterUp {
+    0%   { transform: translateY(0);     }
+    40%  { transform: translateY(-100%); }
+    65%  { transform: translateY(-100%); }
+    100% { transform: translateY(0);     }
+  }
+
+  /* Warning bar across the middle when shutters closed */
+  .call-warn {
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    transform: translateY(-50%);
+    z-index: 2;
+    text-align: center;
+    opacity: 0;
+  }
+  .call-overlay.active .call-warn {
+    animation: callWarnShow 1.3s steps(6) forwards;
+  }
+  @keyframes callWarnShow {
+    0%, 35%   { opacity: 0; }
+    40%, 60%  { opacity: 1; }
+    65%, 100% { opacity: 0; }
+  }
+
+  .call-warn-bar {
+    background: var(--amber);
+    color: var(--bg-0);
+    padding: 16px 28px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(16px, 4vw, 28px);
+    letter-spacing: 0.3em;
+    display: inline-block;
+    box-shadow:
+      0 0 0 4px var(--bg-0),
+      0 0 0 6px var(--amber),
+      0 0 60px rgba(255, 163, 26, 0.7);
+    animation: callBarFlash 0.18s steps(2) infinite;
+  }
+  @keyframes callBarFlash {
+    0%, 100% { background: var(--amber); color: var(--bg-0); }
+    50%      { background: var(--red);   color: #fff; }
+  }
+  .call-warn-sub {
+    font-family: 'VT323', monospace;
+    font-size: clamp(14px, 2.5vw, 18px);
+    color: var(--amber);
+    letter-spacing: 0.25em;
+    margin-top: 14px;
+    text-shadow: 0 0 8px var(--amber-glow);
+  }
+  .call-warn-sub::before { content: '▸ '; color: var(--red); }
+  .call-warn-sub::after  { content: ' ◂'; color: var(--red); }
+
+  /* Static / glitch flash overlay during call */
+  .call-static {
+    position: absolute; inset: 0;
+    background: transparent;
+    z-index: 1;
+    mix-blend-mode: screen;
+  }
+  .call-overlay.active .call-static {
+    animation: callStatic 1.3s steps(20) forwards;
+  }
+  @keyframes callStatic {
+    0%   { background: transparent; }
+    8%   { background: rgba(255, 56, 56, 0.18);  }
+    12%  { background: rgba(74, 229, 74, 0.12);  }
+    16%  { background: rgba(255, 163, 26, 0.20); }
+    20%  { background: transparent; }
+    28%  { background: rgba(255, 56, 56, 0.10);  }
+    32%  { background: transparent; }
+    50%, 70% { background: rgba(255, 163, 26, 0.06); }
+    80%  { background: rgba(74, 229, 74, 0.10); }
+    100% { background: transparent; }
+  }
+
+  /* Heavy noise burst */
+  .call-noise {
+    position: absolute; inset: 0;
+    z-index: 1;
+    opacity: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='nn'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23nn)' opacity='0.85'/></svg>");
+    mix-blend-mode: screen;
+  }
+  .call-overlay.active .call-noise { animation: callNoise 1.3s steps(12) forwards; }
+  @keyframes callNoise {
+    0%   { opacity: 0; }
+    25%  { opacity: 0.55; transform: translate(2px, -1px); }
+    40%  { opacity: 0.4;  transform: translate(-2px, 2px); }
+    55%  { opacity: 0.45; transform: translate(1px, 1px); }
+    70%  { opacity: 0.2;  transform: translate(-1px, 0); }
+    100% { opacity: 0; }
+  }
+
+  /* Slide-in animation for new "next" name after call */
+  .next-card.just-called .next-name {
+    animation: nameReveal 0.55s steps(8);
+  }
+  .next-card.just-called .next-num {
+    animation: numReveal 0.55s steps(8);
+  }
+  @keyframes nameReveal {
+    0%   { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+    50%  { opacity: 1; transform: translateY(-2px) translateX(2px); filter: blur(0); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes numReveal {
+    0%   { opacity: 0; transform: scale(0.5); filter: blur(8px); }
+    60%  { opacity: 1; transform: scale(1.15); filter: blur(0); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
 </style>
 </head>
 <body>
 
 <div class="noise"></div>
+
+<!-- Call transition overlay -->
+<div class="call-overlay" id="callOverlay">
+  <div class="call-static"></div>
+  <div class="call-noise"></div>
+  <div class="shutter top"></div>
+  <div class="shutter bottom"></div>
+  <div class="call-warn">
+    <div class="call-warn-bar">▶ NEXT CALLED</div>
+    <div class="call-warn-sub">EXTRACTION IN PROGRESS</div>
+  </div>
+</div>
 
 <div class="page">
 
@@ -523,12 +681,12 @@
   import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyDCLvalYsoPBnG40Ca7bpuIsUwNc7Qux9E",
-    authDomain: "queue-tori.firebaseapp.com",
-    projectId: "queue-tori",
-    storageBucket: "queue-tori.firebasestorage.app",
-    messagingSenderId: "608324516122",
-    appId: "1:608324516122:web:f1e511722e96945e9514a3"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.firebasestorage.app",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -620,11 +778,47 @@
       </div>`;
   }
 
+  // Track previous first person to detect "call" events
+  let prevFirstId = undefined;  // undefined = first load (no animation)
+  let isAnimating = false;
+  let pendingRender = null;
+
   onSnapshot(query(collection(db, 'queue'), orderBy('order')), (snapshot) => {
-    render(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const newFirstId = data.length > 0 ? data[0].id : null;
+
+    // Detect call event: first person changed AND we had a previous first person
+    const isCallEvent = (prevFirstId !== undefined)
+                     && (prevFirstId !== null)
+                     && (newFirstId !== prevFirstId);
+
+    if (isCallEvent && !isAnimating) {
+      playCallTransition(() => {
+        prevFirstId = newFirstId;
+        render(data, true);
+      });
+    } else {
+      prevFirstId = newFirstId;
+      render(data, false);
+    }
   });
 
-  function render(data) {
+  function playCallTransition(midCallback) {
+    isAnimating = true;
+    const overlay = document.getElementById('callOverlay');
+    overlay.classList.add('active');
+
+    // Mid-animation (shutters closed) — swap content
+    setTimeout(() => { if (midCallback) midCallback(); }, 600);
+
+    // End — clean up
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      isAnimating = false;
+    }, 1300);
+  }
+
+  function render(data, justCalled) {
     const mainArea = document.getElementById('mainArea');
     const listSection = document.getElementById('listSection');
     const waitList = document.getElementById('waitList');
@@ -639,6 +833,10 @@
     }
 
     mainArea.innerHTML = buildNextCard(data[0], data.length);
+    if (justCalled) {
+      const card = mainArea.querySelector('.next-card');
+      if (card) card.classList.add('just-called');
+    }
 
     if (data.length > 1) {
       listSection.style.display = 'block';
