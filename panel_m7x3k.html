@@ -584,11 +584,14 @@
 
         <div class="group">
           <div class="group-label">// Messages</div>
-          <button class="btn btn-export" onclick="navTo(null, 'messages_view_m7x3k.html')">
-            <span class="ico">👁</span> VIEW MESSAGES
+          <button class="btn btn-export" onclick="navTo(null, 'messages_editor_m7x3k.html')">
+            <span class="ico">✏</span> MESSAGE EDITOR
+          </button>
+          <button class="btn btn-soft" onclick="navTo(null, 'birthday_slideshow.html')" style="margin-bottom:6px;">
+            <span class="ico">▶</span> OPEN SLIDESHOW
           </button>
           <button class="btn btn-soft" onclick="exportMessagesCSV()" style="font-size:9px;">
-            <span class="ico">↓</span> EXPORT CSV (TEXT ONLY)
+            <span class="ico">↓</span> EXPORT CSV
           </button>
         </div>
 
@@ -647,7 +650,6 @@
     messagingSenderId: "608324516122",
     appId: "1:608324516122:web:f1e511722e96945e9514a3"
   };
-
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);

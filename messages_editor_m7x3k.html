@@ -9,213 +9,145 @@
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-0: #08080A; --bg-1: #0E1014; --bg-2: #161820; --bg-3: #1F222B;
-    --border: #2A2D34; --border-bright: #3F434E;
-    --amber: #FFA31A; --amber-bright: #FFD93D; --amber-glow: rgba(255,163,26,0.6);
-    --green: #4AE54A; --green-glow: rgba(74,229,74,0.55);
-    --red: #FF3838; --red-glow: rgba(255,56,56,0.6);
-    --sky: #4AC8E5;
-    --text: #E8E6E0; --text-dim: #888B91; --text-mute: #555861;
+    --bg-0:#08080A;--bg-1:#0E1014;--bg-2:#161820;--bg-3:#1F222B;
+    --border:#2A2D34;--border-bright:#3F434E;
+    --amber:#FFA31A;--amber-bright:#FFD93D;--amber-glow:rgba(255,163,26,0.6);
+    --green:#4AE54A;--green-glow:rgba(74,229,74,0.55);
+    --red:#FF3838;--sky:#4AC8E5;
+    --text:#E8E6E0;--text-dim:#888B91;--text-mute:#555861;
   }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html, body {
-    background: var(--bg-0); color: var(--text);
-    font-family: 'DotGothic16','VT323',monospace;
-    min-height: 100vh; -webkit-font-smoothing: antialiased;
-  }
-  body::before {
-    content:''; position:fixed; inset:0;
-    background-image: repeating-linear-gradient(0deg,rgba(0,0,0,0.14) 0,rgba(0,0,0,0.14) 1px,transparent 1px,transparent 3px);
-    pointer-events:none; z-index:9990; mix-blend-mode:multiply;
-  }
-  body::after {
-    content:''; position:fixed; inset:0;
-    background: radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.5) 100%);
-    pointer-events:none; z-index:9991;
-  }
-  .noise {
-    position:fixed; inset:0; pointer-events:none; z-index:9989; opacity:0.05;
-    background-image:url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.65'/></svg>");
-    animation:noise .6s steps(3) infinite;
-  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:var(--bg-0);color:var(--text);font-family:'DotGothic16','VT323',monospace;min-height:100vh;-webkit-font-smoothing:antialiased;}
+  body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,rgba(0,0,0,0.14) 0,rgba(0,0,0,0.14) 1px,transparent 1px,transparent 3px);pointer-events:none;z-index:9990;mix-blend-mode:multiply;}
+  body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.5) 100%);pointer-events:none;z-index:9991;}
+  .noise{position:fixed;inset:0;pointer-events:none;z-index:9989;opacity:0.05;background-image:url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.65'/></svg>");animation:noise .6s steps(3) infinite;}
   @keyframes noise{0%{transform:translate(0,0)}33%{transform:translate(-2px,1px)}66%{transform:translate(1px,-2px)}100%{transform:translate(0,0)}}
 
-  /* ── Top bar ── */
-  .topbar {
-    position:sticky; top:0; z-index:100;
-    background:var(--bg-1); border-bottom:1px solid var(--border);
-    padding:10px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
-  }
-  .brand { display:flex; flex-direction:column; gap:3px; }
-  .brand-eye { font-family:'Press Start 2P',monospace; font-size:8px; letter-spacing:.4em; color:var(--amber); text-transform:uppercase; }
-  .brand-title { font-family:'Press Start 2P',monospace; font-size:clamp(13px,3vw,18px); color:var(--text); letter-spacing:.1em; text-transform:uppercase; text-shadow:2px 0 rgba(255,56,56,.4),-2px 0 rgba(74,229,74,.4); }
-  .brand-title .amp { color:var(--amber); }
-  .topbar-right { display:flex; gap:8px; flex-wrap:wrap; }
-  .nav-link,.btn-top {
-    padding:8px 14px; font-family:'Press Start 2P',monospace; font-size:9px; letter-spacing:.18em; text-transform:uppercase;
-    cursor:pointer; border:none; text-decoration:none; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; transition:all .1s steps(2);
-  }
-  .nav-link { background:var(--bg-2); color:var(--text-dim); border:1px solid var(--border-bright); }
-  .nav-link:hover { border-color:var(--amber); color:var(--amber); }
-  .btn-top.load { background:var(--bg-2); color:var(--sky); border:1px solid rgba(74,200,229,.4); }
-  .btn-top.load:hover { background:rgba(74,200,229,.12); border-color:var(--sky); }
-  .btn-top.launch {
-    background:var(--amber); color:var(--bg-0);
-    box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px var(--amber),0 0 18px rgba(255,163,26,.35);
-    font-size:10px;
-  }
-  .btn-top.launch:hover { background:var(--amber-bright); box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px var(--amber-bright),0 0 28px rgba(255,217,61,.55); }
-  .btn-top.launch:disabled { background:var(--bg-3); color:var(--text-mute); box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px var(--border); cursor:not-allowed; }
+  /* ── Topbar ── */
+  .topbar{position:sticky;top:0;z-index:100;background:var(--bg-1);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .brand{display:flex;flex-direction:column;gap:3px;}
+  .brand-eye{font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:.4em;color:var(--amber);text-transform:uppercase;}
+  .brand-title{font-family:'Press Start 2P',monospace;font-size:clamp(13px,3vw,18px);color:var(--text);letter-spacing:.1em;text-transform:uppercase;text-shadow:2px 0 rgba(255,56,56,.4),-2px 0 rgba(74,229,74,.4);}
+  .brand-title .amp{color:var(--amber);}
+  .topbar-right{display:flex;gap:6px;flex-wrap:wrap;}
 
-  /* ── Stats bar ── */
-  .statsbar {
-    background:var(--bg-1); border-bottom:1px solid var(--border);
-    padding:7px 20px; display:flex; align-items:center; gap:22px;
-    font-family:'VT323',monospace; font-size:15px; color:var(--text-dim);
-  }
-  .statsbar .val { color:var(--amber); font-family:'Press Start 2P',monospace; font-size:12px; }
-  .statsbar .msg-status { margin-left:auto; font-size:13px; }
-  .statsbar .msg-status.ok { color:var(--green); }
-  .statsbar .msg-status.warn { color:var(--amber); }
+  /* Buttons (topbar) */
+  .tbtn{padding:8px 12px;font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:all .1s steps(2);}
+  .tbtn.nav{background:var(--bg-2);color:var(--text-dim);border:1px solid var(--border-bright);}
+  .tbtn.nav:hover{border-color:var(--amber);color:var(--amber);}
+  .tbtn.reload{background:var(--bg-2);color:var(--sky);border:1px solid rgba(74,200,229,.4);}
+  .tbtn.reload:hover{background:rgba(74,200,229,.12);border-color:var(--sky);}
+  .tbtn.download{background:var(--green);color:var(--bg-0);font-size:10px;box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px var(--green),0 0 16px rgba(74,229,74,.35);}
+  .tbtn.download:hover{background:#6cf76c;box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px #6cf76c,0 0 24px rgba(74,229,74,.5);}
+  .tbtn.download:disabled{background:var(--bg-3);color:var(--text-mute);box-shadow:none;cursor:not-allowed;}
+  .tbtn.launch{background:var(--amber);color:var(--bg-0);font-size:10px;box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px var(--amber),0 0 16px rgba(255,163,26,.35);}
+  .tbtn.launch:hover{background:var(--amber-bright);}
+  .tbtn.launch:disabled{background:var(--bg-3);color:var(--text-mute);box-shadow:none;cursor:not-allowed;}
 
-  /* ── Main content ── */
-  .content { position:relative; z-index:1; max-width:900px; margin:0 auto; padding:20px 20px 80px; }
+  /* ── Statsbar ── */
+  .statsbar{background:var(--bg-1);border-bottom:1px solid var(--border);padding:7px 20px;display:flex;align-items:center;gap:20px;font-family:'VT323',monospace;font-size:15px;color:var(--text-dim);}
+  .statsbar .val{color:var(--amber);font-family:'Press Start 2P',monospace;font-size:12px;}
+  .statsbar .status{margin-left:auto;font-size:13px;}
+  .statsbar .status.ok{color:var(--green);}
+  .statsbar .status.warn{color:var(--amber);}
 
-  /* Load state */
-  .loading { text-align:center; padding:60px 24px; font-family:'Press Start 2P',monospace; font-size:12px; color:var(--amber); letter-spacing:.3em; animation:lpulse 1s steps(2) infinite; }
+  /* ── Content ── */
+  .content{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:20px 20px 90px;}
+  .loading{text-align:center;padding:60px 24px;font-family:'Press Start 2P',monospace;font-size:12px;color:var(--amber);letter-spacing:.3em;animation:lpulse 1s steps(2) infinite;}
   @keyframes lpulse{0%,100%{opacity:1}50%{opacity:.5}}
-  .empty { text-align:center; padding:60px 24px; font-family:'VT323',monospace; font-size:18px; color:var(--text-mute); letter-spacing:.08em; }
+  .empty{text-align:center;padding:60px 24px;font-family:'VT323',monospace;font-size:18px;color:var(--text-mute);}
 
-  /* ── Message cards ── */
-  .card-list { display:flex; flex-direction:column; gap:12px; }
+  /* ── Cards ── */
+  .card-list{display:flex;flex-direction:column;gap:14px;}
+  .msg-card{background:var(--bg-1);border:1px solid var(--border);position:relative;}
+  .msg-card.has-image{border-color:rgba(255,163,26,.3);}
 
-  .msg-card {
-    background:var(--bg-1); border:1px solid var(--border);
-    position:relative; transition:border-color .1s steps(2);
-  }
-  .msg-card.has-image { border-color:rgba(255,163,26,.3); }
+  .card-head{background:var(--bg-2);border-bottom:1px solid var(--border);padding:7px 12px;display:flex;align-items:center;gap:10px;}
+  .card-idx{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--amber);flex-shrink:0;min-width:32px;text-shadow:0 0 6px var(--amber-glow);}
+  .card-orig{font-family:'VT323',monospace;font-size:15px;color:var(--text-dim);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .card-time{font-family:'VT323',monospace;font-size:13px;color:var(--text-mute);flex-shrink:0;}
+  .card-acts{display:flex;gap:4px;flex-shrink:0;}
+  .ic{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--border-bright);color:var(--text-dim);cursor:pointer;font-size:14px;transition:all .1s steps(2);flex-shrink:0;}
+  .ic:hover{background:var(--bg-3);border-color:var(--text-dim);color:var(--text);}
+  .ic.up:hover,.ic.dn:hover{border-color:var(--sky);color:var(--sky);}
+  .ic.del{color:var(--red);border-color:rgba(255,56,56,.3);}
+  .ic.del:hover{background:rgba(255,56,56,.1);border-color:var(--red);}
+  .ic:disabled{opacity:.25;cursor:not-allowed;}
 
-  .card-head {
-    background:var(--bg-2); border-bottom:1px solid var(--border);
-    padding:7px 12px; display:flex; align-items:center; gap:10px;
-  }
-  .card-idx { font-family:'Press Start 2P',monospace; font-size:10px; color:var(--amber); flex-shrink:0; min-width:36px; text-shadow:0 0 6px var(--amber-glow); }
-  .card-orig-name { font-family:'VT323',monospace; font-size:15px; color:var(--text-dim); letter-spacing:.05em; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .card-time { font-family:'VT323',monospace; font-size:13px; color:var(--text-mute); flex-shrink:0; }
-  .card-actions { display:flex; gap:4px; flex-shrink:0; }
-  .ic-btn {
-    width:28px; height:28px; display:flex; align-items:center; justify-content:center;
-    background:transparent; border:1px solid var(--border-bright); color:var(--text-dim);
-    cursor:pointer; font-size:14px; transition:all .1s steps(2);
-  }
-  .ic-btn:hover { background:var(--bg-3); border-color:var(--text-dim); color:var(--text); }
-  .ic-btn.up:hover { border-color:var(--sky); color:var(--sky); }
-  .ic-btn.dn:hover { border-color:var(--sky); color:var(--sky); }
-  .ic-btn.del { color:var(--red); border-color:rgba(255,56,56,.3); }
-  .ic-btn.del:hover { background:rgba(255,56,56,.1); border-color:var(--red); }
-  .ic-btn:disabled { opacity:.25; cursor:not-allowed; }
+  .card-body{padding:14px;display:flex;gap:14px;}
 
-  .card-body { padding:14px; display:flex; gap:14px; }
+  /* ── Image side ── */
+  .img-side{flex-shrink:0;width:90px;display:flex;flex-direction:column;gap:5px;}
+  .img-thumb{width:90px;height:90px;object-fit:cover;border:1px solid var(--amber);display:block;}
+  .no-img-box{width:90px;height:90px;background:var(--bg-2);border:1px dashed var(--border-bright);display:flex;align-items:center;justify-content:center;font-family:'VT323',monospace;font-size:12px;color:var(--text-mute);text-align:center;}
+  .img-tag{font-family:'VT323',monospace;font-size:11px;color:var(--green);letter-spacing:.08em;}
+  .img-actions{display:flex;flex-direction:column;gap:3px;}
+  .img-btn{width:90px;padding:5px 4px;font-family:'Press Start 2P',monospace;font-size:7px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:none;transition:all .1s steps(2);text-align:center;}
+  .img-btn.change{background:var(--bg-2);color:var(--sky);border:1px solid rgba(74,200,229,.4);}
+  .img-btn.change:hover{background:rgba(74,200,229,.12);border-color:var(--sky);}
+  .img-btn.rm{background:transparent;color:var(--red);border:1px solid rgba(255,56,56,.3);}
+  .img-btn.rm:hover{background:rgba(255,56,56,.1);border-color:var(--red);}
 
-  /* Image side */
-  .img-side { flex-shrink:0; width:80px; }
-  .img-thumb { width:80px; height:80px; object-fit:cover; border:1px solid var(--amber); display:block; }
-  .no-img-box {
-    width:80px; height:80px; background:var(--bg-2); border:1px dashed var(--border-bright);
-    display:flex; align-items:center; justify-content:center;
-    font-family:'VT323',monospace; font-size:12px; color:var(--text-mute); text-align:center;
-  }
-  .img-tag { font-family:'VT323',monospace; font-size:11px; color:var(--green); letter-spacing:.1em; margin-top:4px; }
+  /* ── Edit side ── */
+  .edit-side{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;}
+  .field-label{font-family:'VT323',monospace;font-size:14px;color:var(--amber);letter-spacing:.08em;margin-bottom:3px;}
+  .field-label::before{content:'> ';color:var(--green);}
+  .edit-name{width:100%;background:var(--bg-0);border:1px solid var(--border-bright);color:var(--text);font-family:'DotGothic16',monospace;font-size:16px;padding:8px 10px;outline:none;caret-color:var(--amber);transition:border-color .1s steps(2);}
+  .edit-name:focus{border-color:var(--amber);}
+  .edit-msg{width:100%;background:var(--bg-0);border:1px solid var(--border-bright);color:var(--text);font-family:'DotGothic16',monospace;font-size:14px;padding:10px;outline:none;caret-color:var(--amber);resize:vertical;min-height:90px;line-height:1.7;transition:border-color .1s steps(2);}
+  .edit-msg:focus{border-color:var(--amber);}
+  .char-row{display:flex;justify-content:flex-end;font-family:'VT323',monospace;font-size:13px;color:var(--text-mute);}
+  .cnt.warn{color:var(--amber);}.cnt.over{color:var(--red);}
 
-  /* Edit side */
-  .edit-side { flex:1; min-width:0; display:flex; flex-direction:column; gap:10px; }
-
-  .field-label { font-family:'VT323',monospace; font-size:14px; color:var(--amber); letter-spacing:.08em; margin-bottom:3px; }
-  .field-label::before { content:'> '; color:var(--green); }
-
-  .edit-name {
-    width:100%; background:var(--bg-0); border:1px solid var(--border-bright);
-    color:var(--text); font-family:'DotGothic16',monospace; font-size:16px;
-    padding:8px 10px; outline:none; caret-color:var(--amber);
-    transition:border-color .1s steps(2);
-  }
-  .edit-name:focus { border-color:var(--amber); }
-
-  .edit-msg {
-    width:100%; background:var(--bg-0); border:1px solid var(--border-bright);
-    color:var(--text); font-family:'DotGothic16',monospace; font-size:14px;
-    padding:10px 10px; outline:none; caret-color:var(--amber); resize:vertical;
-    min-height:90px; line-height:1.7; transition:border-color .1s steps(2);
-  }
-  .edit-msg:focus { border-color:var(--amber); }
-
-  .char-info { display:flex; justify-content:space-between; font-family:'VT323',monospace; font-size:13px; color:var(--text-mute); }
-  .char-info .cnt { }
-  .char-info .cnt.warn { color:var(--amber); }
-  .char-info .cnt.over { color:var(--red); }
-
-  /* ── Bottom bar ── */
-  .bottombar {
-    position:fixed; bottom:0; left:0; right:0; z-index:100;
-    background:var(--bg-1); border-top:1px solid var(--border);
-    padding:10px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
-  }
-  .bottombar .hint { font-family:'VT323',monospace; font-size:14px; color:var(--text-dim); flex:1; }
-  .btn-copy {
-    padding:10px 18px; background:var(--bg-2); color:var(--text-dim);
-    border:1px solid var(--border-bright); font-family:'Press Start 2P',monospace;
-    font-size:9px; letter-spacing:.18em; cursor:pointer; text-transform:uppercase;
-    transition:all .1s steps(2);
-  }
-  .btn-copy:hover { border-color:var(--sky); color:var(--sky); }
-  .btn-launch-main {
-    padding:12px 22px; background:var(--amber); color:var(--bg-0);
-    border:none; font-family:'Press Start 2P',monospace; font-size:11px;
-    letter-spacing:.18em; cursor:pointer; text-transform:uppercase;
-    box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px var(--amber),0 0 20px rgba(255,163,26,.4);
-    transition:all .1s steps(2);
-  }
-  .btn-launch-main:hover { background:var(--amber-bright); }
-  .btn-launch-main:disabled { background:var(--bg-3); color:var(--text-mute); cursor:not-allowed; box-shadow:none; }
+  /* ── Bottombar ── */
+  .bottombar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--bg-1);border-top:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .bottombar .hint{font-family:'VT323',monospace;font-size:14px;color:var(--text-dim);flex:1;min-width:0;}
+  .bbtn{padding:11px 18px;font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.18em;cursor:pointer;border:none;text-transform:uppercase;transition:all .1s steps(2);}
+  .bbtn.copy{background:var(--bg-2);color:var(--text-dim);border:1px solid var(--border-bright);}
+  .bbtn.copy:hover{border-color:var(--sky);color:var(--sky);}
+  .bbtn.dl{background:var(--green);color:var(--bg-0);box-shadow:0 0 0 2px var(--bg-1),0 0 0 3px var(--green),0 0 18px rgba(74,229,74,.4);}
+  .bbtn.dl:hover{background:#6cf76c;}
+  .bbtn.dl:disabled{background:var(--bg-3);color:var(--text-mute);box-shadow:none;cursor:not-allowed;}
 
   /* Toast */
-  .toast {
-    position:fixed; bottom:70px; left:50%; transform:translate(-50%,60px);
-    background:var(--bg-0); border:1px solid var(--amber); color:var(--amber);
-    padding:10px 20px; font-family:'DotGothic16',monospace; font-size:14px;
-    transition:transform .2s steps(4); z-index:9000;
-    box-shadow:0 0 24px rgba(255,163,26,.35),0 0 0 2px var(--bg-0); white-space:nowrap;
-  }
-  .toast.show { transform:translate(-50%,0); }
-  .toast.ok { border-color:var(--green); color:var(--green); }
-  .toast::before { content:'► '; }
-  .toast.ok::before { content:'✓ '; }
+  .toast{position:fixed;bottom:70px;left:50%;transform:translate(-50%,60px);background:var(--bg-0);border:1px solid var(--amber);color:var(--amber);padding:10px 20px;font-family:'DotGothic16',monospace;font-size:14px;transition:transform .2s steps(4);z-index:9000;box-shadow:0 0 24px rgba(255,163,26,.35),0 0 0 2px var(--bg-0);white-space:nowrap;}
+  .toast.show{transform:translate(-50%,0);}
+  .toast.ok{border-color:var(--green);color:var(--green);}
+  .toast::before{content:'► ';}
+  .toast.ok::before{content:'✓ ';}
 
-  .credits { position:fixed; bottom:54px; right:16px; font-family:'VT323',monospace; font-size:11px; color:var(--text-mute); letter-spacing:.18em; pointer-events:none; z-index:50; }
+  /* Image loading overlay on card */
+  .img-loading{position:absolute;inset:0;background:rgba(8,8,10,.7);display:flex;align-items:center;justify-content:center;z-index:10;font-family:'Press Start 2P',monospace;font-size:9px;color:var(--amber);letter-spacing:.2em;animation:lpulse 1s steps(2) infinite;}
+
+  .credits{position:fixed;bottom:56px;right:16px;font-family:'VT323',monospace;font-size:11px;color:var(--text-mute);letter-spacing:.18em;pointer-events:none;z-index:50;}
 </style>
 </head>
 <body>
 
 <div class="noise"></div>
 
-<!-- Top bar -->
+<!-- Hidden global image input -->
+<input type="file" id="globalImgInput" accept="image/jpeg,image/png" style="display:none">
+
+<!-- Topbar -->
 <div class="topbar">
   <div class="brand">
     <div class="brand-eye">▸ ADMIN EDITOR ◂</div>
     <div class="brand-title">MESSAGES <span class="amp">::</span> EDIT</div>
   </div>
   <div class="topbar-right">
-    <a href="panel_m7x3k.html" class="nav-link">[ ← PANEL ]</a>
-    <button class="btn-top load" onclick="loadMessages()">↺ RELOAD</button>
-    <button class="btn-top launch" id="launchTopBtn" onclick="launchSlideshow()" disabled>▶ LAUNCH SLIDESHOW</button>
+    <a href="panel_m7x3k.html" class="tbtn nav">[ ← PANEL ]</a>
+    <button class="tbtn reload" onclick="loadMessages()">↺ RELOAD</button>
+    <button class="tbtn download" id="dlTopBtn" onclick="downloadSlideshow()" disabled>↓ DOWNLOAD SLIDESHOW</button>
+    <button class="tbtn launch" id="launchTopBtn" onclick="launchSlideshow()" disabled>▶ LAUNCH</button>
   </div>
 </div>
 
-<!-- Stats bar -->
+<!-- Statsbar -->
 <div class="statsbar">
   <span>MESSAGES: <span class="val" id="statTotal">--</span></span>
   <span>WITH IMAGE: <span class="val" style="color:var(--green)" id="statImg">--</span></span>
-  <span class="msg-status" id="msgStatus">// loading...</span>
+  <span class="status" id="msgStatus">// loading...</span>
 </div>
 
 <!-- Cards -->
@@ -225,11 +157,11 @@
   </div>
 </div>
 
-<!-- Bottom bar -->
+<!-- Bottombar -->
 <div class="bottombar">
-  <span class="hint">// 編集後に「LAUNCH SLIDESHOW」でスライドショーを起動</span>
-  <button class="btn-copy" onclick="copyJSON()">COPY JSON</button>
-  <button class="btn-launch-main" id="launchBtn" onclick="launchSlideshow()" disabled>▶ SAVE &amp; LAUNCH SLIDESHOW</button>
+  <span class="hint">// DOWNLOAD SLIDESHOW = データ埋め込み済みHTMLをダウンロード（推奨）</span>
+  <button class="bbtn copy" onclick="copyJSON()">COPY JSON</button>
+  <button class="bbtn dl" id="dlBtn" onclick="downloadSlideshow()" disabled>↓ DOWNLOAD SLIDESHOW</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -249,151 +181,198 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  const db  = getFirestore(app);
   const messagesRef = collection(db, 'messages');
 
-  // Working copy of messages (editable)
   let msgs = [];
+  let editingImgIdx = null;
 
+  /* ── Helpers ── */
+  function escH(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
   function formatTime(ts) {
     if (!ts || !ts.toDate) return '';
-    const d = ts.toDate();
-    const p = n => String(n).padStart(2,'0');
+    const d = ts.toDate(), p = n => String(n).padStart(2,'0');
     return `${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
   }
 
-  function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  /* ── Canvas image compression ── */
+  async function compressImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 480;
+          let w = img.width, h = img.height;
+          if (w > h) { if (w > MAX) { h = Math.round(h*MAX/w); w = MAX; } }
+          else        { if (h > MAX) { w = Math.round(w*MAX/h); h = MAX; } }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
-  /* ── Render cards ── */
-  function render() {
-    const container = document.getElementById('cardContainer');
-    const total = msgs.length;
-    const withImg = msgs.filter(m => m.imageData).length;
+  /* ── Sync edits from DOM before re-rendering ── */
+  function syncFromDOM() {
+    msgs.forEach((m, i) => {
+      const ne = document.getElementById(`name-${i}`);
+      const me = document.getElementById(`msg-${i}`);
+      if (ne) m.name    = ne.value;
+      if (me) m.message = me.value;
+    });
+  }
 
+  /* ── Render all cards ── */
+  function render() {
+    const total   = msgs.length;
+    const withImg = msgs.filter(m => !!m.imageData).length;
     document.getElementById('statTotal').textContent = String(total).padStart(2,'0');
     document.getElementById('statImg').textContent   = String(withImg).padStart(2,'0');
 
     const status = document.getElementById('msgStatus');
-    if (total === 0) {
-      status.textContent = '// no messages yet';
-      status.className = 'msg-status warn';
-    } else {
-      status.textContent = `// ${total} messages ready`;
-      status.className = 'msg-status ok';
-    }
+    if (total === 0) { status.textContent = '// no messages'; status.className = 'status warn'; }
+    else             { status.textContent = `// ${total} messages ready`; status.className = 'status ok'; }
 
-    // Enable/disable launch buttons
-    const canLaunch = total > 0;
-    document.getElementById('launchBtn').disabled    = !canLaunch;
-    document.getElementById('launchTopBtn').disabled = !canLaunch;
+    const canAct = total > 0;
+    ['dlTopBtn','launchTopBtn','dlBtn'].forEach(id => {
+      document.getElementById(id).disabled = !canAct;
+    });
 
-    if (total === 0) {
-      container.innerHTML = '<div class="empty">// Firestoreにメッセージがありません</div>';
-      return;
-    }
+    const container = document.getElementById('cardContainer');
+    if (total === 0) { container.innerHTML = '<div class="empty">// メッセージがありません</div>'; return; }
 
-    container.innerHTML = `<div class="card-list" id="cardList">
-      ${msgs.map((m, i) => buildCard(m, i, total)).join('')}
-    </div>`;
+    container.innerHTML = `<div class="card-list">${msgs.map((m,i) => buildCard(m,i,total)).join('')}</div>`;
 
-    // Attach listeners to editable fields
     msgs.forEach((m, i) => {
-      const nameEl = document.getElementById(`name-${i}`);
-      const msgEl  = document.getElementById(`msg-${i}`);
-      const nameCnt= document.getElementById(`ncnt-${i}`);
-      const msgCnt = document.getElementById(`mcnt-${i}`);
-
-      nameEl.addEventListener('input', () => {
-        msgs[i].name = nameEl.value;
-        const len = nameEl.value.length;
-        nameCnt.textContent = `${String(len).padStart(2,'0')}/20`;
-        nameCnt.className = 'cnt' + (len >= 20 ? ' over' : len >= 16 ? ' warn' : '');
+      const ne   = document.getElementById(`name-${i}`);
+      const me   = document.getElementById(`msg-${i}`);
+      const ncnt = document.getElementById(`ncnt-${i}`);
+      const mcnt = document.getElementById(`mcnt-${i}`);
+      ne.addEventListener('input', () => {
+        msgs[i].name = ne.value;
+        const l = ne.value.length;
+        ncnt.textContent = `${String(l).padStart(2,'0')}/20`;
+        ncnt.className = 'cnt'+(l>=20?' over':l>=16?' warn':'');
       });
-      msgEl.addEventListener('input', () => {
-        msgs[i].message = msgEl.value;
-        const len = msgEl.value.length;
-        msgCnt.textContent = `${String(len).padStart(4,'0')}/0400`;
-        msgCnt.className = 'cnt' + (len >= 400 ? ' over' : len >= 360 ? ' warn' : '');
+      me.addEventListener('input', () => {
+        msgs[i].message = me.value;
+        const l = me.value.length;
+        mcnt.textContent = `${String(l).padStart(4,'0')}/0400`;
+        mcnt.className = 'cnt'+(l>=400?' over':l>=360?' warn':'');
       });
     });
   }
 
   function buildCard(m, i, total) {
-    const num = String(i + 1).padStart(2,'0');
-    const imgBlock = m.imageData
-      ? `<img class="img-thumb" src="${escHtml(m.imageData)}" alt="${escHtml(m.name)}">
-         <div class="img-tag">// ICON</div>`
-      : `<div class="no-img-box">NO<br>IMG</div>`;
+    const num = String(i+1).padStart(2,'0');
+    const nl  = (m.name    ||'').length;
+    const ml  = (m.message ||'').length;
 
-    const namelen = (m.name || '').length;
-    const msglen  = (m.message || '').length;
-    const ncls = namelen >= 20 ? ' over' : namelen >= 16 ? ' warn' : '';
-    const mcls = msglen  >= 400 ? ' over' : msglen  >= 360 ? ' warn' : '';
+    const imgBlock = m.imageData
+      ? `<img class="img-thumb" src="${escH(m.imageData)}" alt="${escH(m.name)}">`
+      : `<div class="no-img-box">NO<br>IMG</div>`;
+    const imgTag = m.imageData ? `<div class="img-tag">// ICON</div>` : '';
+    const rmBtn  = m.imageData
+      ? `<button class="img-btn rm" onclick="removeImg(${i})">✕ DELETE</button>` : '';
 
     return `
-    <div class="msg-card ${m.imageData ? 'has-image' : ''}">
+    <div class="msg-card${m.imageData?' has-image':''}" id="card-${i}">
       <div class="card-head">
         <span class="card-idx">${num}</span>
-        <span class="card-orig-name">元: ${escHtml(m._origName || m.name)}</span>
-        <span class="card-time">${escHtml(m._time || '')}</span>
-        <div class="card-actions">
-          <button class="ic-btn up" onclick="moveUp(${i})" ${i === 0 ? 'disabled' : ''} title="上へ">↑</button>
-          <button class="ic-btn dn" onclick="moveDown(${i})" ${i === total-1 ? 'disabled' : ''} title="下へ">↓</button>
-          <button class="ic-btn del" onclick="deleteCard(${i})" title="削除">✕</button>
+        <span class="card-orig">元: ${escH(m._orig||m.name)}</span>
+        <span class="card-time">${escH(m._time||'')}</span>
+        <div class="card-acts">
+          <button class="ic up"  onclick="moveUp(${i})"   ${i===0       ?'disabled':''} title="上へ">↑</button>
+          <button class="ic dn"  onclick="moveDown(${i})" ${i===total-1 ?'disabled':''} title="下へ">↓</button>
+          <button class="ic del" onclick="deleteCard(${i})" title="削除">✕</button>
         </div>
       </div>
       <div class="card-body">
-        <div class="img-side">${imgBlock}</div>
+        <div class="img-side">
+          ${imgBlock}
+          ${imgTag}
+          <div class="img-actions">
+            <button class="img-btn change" onclick="changeImg(${i})">📷 ${m.imageData?'CHANGE':'ADD'}</button>
+            ${rmBtn}
+          </div>
+        </div>
         <div class="edit-side">
           <div>
             <div class="field-label">NAME (スライドに表示する名前)</div>
-            <input class="edit-name" id="name-${i}" type="text" maxlength="20" value="${escHtml(m.name || '')}">
-            <div class="char-info"><span class="cnt${ncls}" id="ncnt-${i}">${String(namelen).padStart(2,'0')}/20</span></div>
+            <input class="edit-name" id="name-${i}" type="text" maxlength="20" value="${escH(m.name||'')}">
+            <div class="char-row"><span class="cnt${nl>=20?' over':nl>=16?' warn':''}" id="ncnt-${i}">${String(nl).padStart(2,'0')}/20</span></div>
           </div>
           <div>
             <div class="field-label">MESSAGE (スライドに表示する本文)</div>
-            <textarea class="edit-msg" id="msg-${i}" maxlength="400">${escHtml(m.message || '')}</textarea>
-            <div class="char-info"><span class="cnt${mcls}" id="mcnt-${i}">${String(msglen).padStart(4,'0')}/0400</span></div>
+            <textarea class="edit-msg" id="msg-${i}" maxlength="400">${escH(m.message||'')}</textarea>
+            <div class="char-row"><span class="cnt${ml>=400?' over':ml>=360?' warn':''}" id="mcnt-${i}">${String(ml).padStart(4,'0')}/0400</span></div>
           </div>
         </div>
       </div>
     </div>`;
   }
 
-  /* ── Actions ── */
+  /* ── Card actions ── */
   window.moveUp = function(i) {
-    if (i <= 0) return;
-    [msgs[i-1], msgs[i]] = [msgs[i], msgs[i-1]];
-    // Preserve edits from DOM before re-render
+    if (i<=0) return;
     syncFromDOM();
+    [msgs[i-1],msgs[i]] = [msgs[i],msgs[i-1]];
     render();
   };
-
   window.moveDown = function(i) {
-    if (i >= msgs.length - 1) return;
+    if (i>=msgs.length-1) return;
     syncFromDOM();
-    [msgs[i], msgs[i+1]] = [msgs[i+1], msgs[i]];
+    [msgs[i],msgs[i+1]] = [msgs[i+1],msgs[i]];
     render();
   };
-
   window.deleteCard = function(i) {
-    if (!confirm(`「${msgs[i].name}」のメッセージを削除しますか？`)) return;
+    if (!confirm(`「${msgs[i].name}」を削除しますか？`)) return;
     syncFromDOM();
-    msgs.splice(i, 1);
+    msgs.splice(i,1);
     render();
     showToast('削除しました');
   };
+  window.removeImg = function(i) {
+    syncFromDOM();
+    msgs[i].imageData = null;
+    render();
+    showToast('画像を削除しました');
+  };
 
-  function syncFromDOM() {
-    msgs.forEach((m, i) => {
-      const nameEl = document.getElementById(`name-${i}`);
-      const msgEl  = document.getElementById(`msg-${i}`);
-      if (nameEl) m.name    = nameEl.value;
-      if (msgEl)  m.message = msgEl.value;
-    });
-  }
+  /* ── Image change (global input + index tracking) ── */
+  window.changeImg = function(i) {
+    editingImgIdx = i;
+    document.getElementById('globalImgInput').click();
+  };
+
+  document.getElementById('globalImgInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!['image/jpeg','image/png'].includes(file.type)) { showToast('JPEG/PNGのみ対応'); e.target.value=''; return; }
+    if (file.size > 3*1024*1024) { showToast('3MB以下の画像を選択してください'); e.target.value=''; return; }
+
+    const card = document.getElementById(`card-${editingImgIdx}`);
+    if (card) { const ol = document.createElement('div'); ol.className='img-loading'; ol.textContent='COMPRESSING...'; card.style.position='relative'; card.appendChild(ol); }
+
+    try {
+      syncFromDOM();
+      msgs[editingImgIdx].imageData = await compressImage(file);
+      render();
+      showToast('画像を更新しました', true);
+    } catch(err) {
+      showToast('画像処理失敗: ' + err.message);
+    }
+    e.target.value = '';
+  });
 
   /* ── Load from Firestore ── */
   window.loadMessages = async function() {
@@ -401,20 +380,13 @@
     document.getElementById('statTotal').textContent = '--';
     document.getElementById('statImg').textContent   = '--';
     document.getElementById('msgStatus').textContent = '// connecting...';
-    document.getElementById('launchBtn').disabled    = true;
-    document.getElementById('launchTopBtn').disabled = true;
+    ['dlTopBtn','launchTopBtn','dlBtn'].forEach(id => { document.getElementById(id).disabled = true; });
 
     try {
-      const snap = await getDocs(query(messagesRef, orderBy('createdAt', 'asc')));
+      const snap = await getDocs(query(messagesRef, orderBy('createdAt','asc')));
       msgs = snap.docs.map(d => {
         const data = d.data();
-        return {
-          name:      data.name    || '',
-          message:   data.message || '',
-          imageData: data.imageData || null,
-          _origName: data.name    || '',
-          _time:     formatTime(data.createdAt),
-        };
+        return { name: data.name||'', message: data.message||'', imageData: data.imageData||null, _orig: data.name||'', _time: formatTime(data.createdAt) };
       });
       render();
       if (msgs.length > 0) showToast(`${msgs.length}件を読み込みました`, true);
@@ -422,62 +394,86 @@
       console.error(err);
       document.getElementById('cardContainer').innerHTML = `<div class="empty">// ERROR: ${err.message}</div>`;
       document.getElementById('msgStatus').textContent = '// connection failed';
+      document.getElementById('msgStatus').className = 'status warn';
     }
   };
 
-  /* ── Save to localStorage & launch slideshow ── */
+  /* ── DOWNLOAD SLIDESHOW (recommended — embeds data directly into HTML) ── */
+  window.downloadSlideshow = async function() {
+    syncFromDOM();
+    const data = msgs
+      .map(m => ({ name: (m.name||'').trim()||'名無し', message: (m.message||'').trim(), imageData: m.imageData||null }))
+      .filter(m => m.name || m.message);
+
+    if (data.length === 0) { showToast('メッセージがありません'); return; }
+
+    showToast('スライドショーを生成中...', true);
+
+    try {
+      const resp = await fetch('birthday_slideshow.html');
+      if (!resp.ok) throw new Error(`fetch failed: ${resp.status}`);
+      let html = await resp.text();
+
+      // Inject MESSAGE_DATA directly (replaces localStorage reading)
+      const dataStr = JSON.stringify(data);
+      const injected = html.replace(
+        'const MESSAGE_DATA = loadMessageData();',
+        `const MESSAGE_DATA = ${dataStr}; /* ${data.length} messages embedded */`
+      );
+
+      if (injected === html) throw new Error('injection marker not found in birthday_slideshow.html');
+
+      const blob = new Blob([injected], { type: 'text/html;charset=utf-8' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = 'birthday_slideshow_final.html';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+      showToast(`${data.length}件埋め込み → ダウンロード完了`, true);
+    } catch(err) {
+      console.error(err);
+      showToast('生成失敗: ' + err.message);
+    }
+  };
+
+  /* ── LAUNCH SLIDESHOW (localStorage, same-origin fallback) ── */
   window.launchSlideshow = function() {
     syncFromDOM();
+    const data = msgs
+      .map(m => ({ name: (m.name||'').trim()||'名無し', message: (m.message||'').trim(), imageData: m.imageData||null }))
+      .filter(m => m.name || m.message);
 
-    // Build clean array for slideshow
-    const data = msgs.map(m => ({
-      name:      m.name.trim()    || '名無し',
-      message:   m.message.trim() || '',
-      imageData: m.imageData || null,
-    })).filter(m => m.name || m.message);
-
-    if (data.length === 0) {
-      showToast('メッセージがありません');
-      return;
-    }
+    if (data.length === 0) { showToast('メッセージがありません'); return; }
 
     try {
       localStorage.setItem('tori_messages', JSON.stringify(data));
-      showToast(`${data.length}件を保存 → スライドショーを起動`, true);
-      setTimeout(() => {
-        window.open('birthday_slideshow.html', '_blank');
-      }, 400);
-    } catch(err) {
-      console.error(err);
-      showToast('保存失敗: ' + err.message);
-    }
+    } catch(e) { console.warn('localStorage blocked:', e); }
+
+    showToast(`${data.length}件を保存 → 起動`, true);
+    setTimeout(() => window.open('birthday_slideshow.html', '_blank'), 300);
   };
 
-  /* ── Copy JSON to clipboard ── */
+  /* ── Copy JSON ── */
   window.copyJSON = function() {
     syncFromDOM();
-    const data = msgs.map(m => ({
-      name:      m.name.trim(),
-      message:   m.message.trim(),
-      imageData: m.imageData || null,
-    }));
-    const json = JSON.stringify(data, null, 2);
-    navigator.clipboard.writeText(json).then(() => {
-      showToast('JSONをクリップボードにコピーしました', true);
-    }).catch(() => {
-      showToast('コピー失敗');
-    });
+    const data = msgs.map(m => ({ name: (m.name||'').trim(), message: (m.message||'').trim(), imageData: m.imageData||null }));
+    navigator.clipboard.writeText(JSON.stringify(data, null, 2))
+      .then(() => showToast('JSONをコピーしました', true))
+      .catch(() => showToast('コピー失敗'));
   };
 
   /* ── Toast ── */
-  window.showToast = function(msg, isOk = false) {
+  window.showToast = function(msg, isOk=false) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.className = 'toast show' + (isOk ? ' ok' : '');
-    setTimeout(() => t.classList.remove('show'), 3000);
+    setTimeout(() => t.classList.remove('show'), 3200);
   };
 
-  // Auto-load on open
   loadMessages();
 </script>
 </body>
