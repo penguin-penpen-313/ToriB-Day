@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T.O.R.I — 順番待ち</title>
+<title>T.O.R.I — 順番待ち [DEMO]</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
@@ -743,7 +743,9 @@
         <button class="btn-secondary" style="grid-column:1/-1;" onclick="navTo(event, 'display.html')">[ DISPLAY QUEUE ]</button>
       </div>
 
+      <!-- [DEMO] メッセージ機能は本番のみ
       <button class="btn-message-only" onclick="goToMessageOnly()">予約せずにメッセージのみ送る</button>
+      -->
     </div>
   </div>
 
@@ -762,6 +764,7 @@
 
 </div>
 
+<!-- [DEMO] モーダル非表示
 <!-- INCOMING TRANSMISSION Modal -->
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
@@ -781,6 +784,8 @@
       </div>
     </div>
   </div>
+
+-->
 </div>
 
 <div class="toast" id="toast"></div>
@@ -791,19 +796,19 @@
   import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyDCLvalYsoPBnG40Ca7bpuIsUwNc7Qux9E",
-    authDomain: "queue-tori.firebaseapp.com",
-    projectId: "queue-tori",
-    storageBucket: "queue-tori.firebasestorage.app",
-    messagingSenderId: "608324516122",
-    appId: "1:608324516122:web:f1e511722e96945e9514a3"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.firebasestorage.app",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const queueRef = collection(db, 'queue');
   let queueData = [];
-  let pendingName = null;
+  // let pendingName = null; // [DEMO] 不要
 
   onSnapshot(query(queueRef, orderBy('order')), (snapshot) => {
     queueData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -833,44 +838,26 @@
     return false;
   };
 
-  window.onReserveClick = function() {
+  // [DEMO版] モーダル・メッセージ機能をスキップして直接キュー登録
+  window.onReserveClick = async function() {
     const input = document.getElementById('nameInput');
     const name = input.value.trim();
     if (!name) { showToast('お名前を入力してください', true); input.focus(); return; }
     if (queueData.find(q => q.name === name)) { showToast(`「${name}」は登録済みです`, true); return; }
-    pendingName = name;
-    openModal();
-  };
-
-  window.openModal = function() { document.getElementById('modalBackdrop').classList.add('show'); };
-  window.closeModal = function() { document.getElementById('modalBackdrop').classList.remove('show'); };
-
-  window.onModalChoice = async function(wantsToSendMessage) {
-    closeModal();
-    if (!pendingName) return;
-    const name = pendingName;
-    pendingName = null;
     try {
       const maxOrder = queueData.length > 0 ? Math.max(...queueData.map(d => d.order)) : 0;
       await addDoc(queueRef, { name, order: maxOrder + 1, createdAt: serverTimestamp() });
-      document.getElementById('nameInput').value = '';
-      if (wantsToSendMessage) {
-        const overlay = document.getElementById('transitionOverlay');
-        overlay.classList.add('active');
-        setTimeout(() => {
-          window.location.href = 'message.html?name=' + encodeURIComponent(name) + '&from=reserve';
-        }, 380);
-      } else {
-        showToast(`「${name}」を登録 [位置: ${queueData.length}]`);
-      }
+      input.value = '';
+      showToast(`「${name}」を登録 [位置: ${queueData.length}]`);
     } catch (err) { console.error(err); showToast('登録失敗 [ERR]', true); }
   };
 
-  window.goToMessageOnly = function() {
-    const nameVal = (document.getElementById('nameInput').value || '').trim();
-    const param = nameVal ? '?name=' + encodeURIComponent(nameVal) : '';
-    navTo(null, 'message.html' + param);
-  };
+  /* [DEMO版] 以下はコメントアウト — 本番版のみ有効
+  window.openModal    = function() { ... };
+  window.closeModal   = function() { ... };
+  window.onModalChoice = async function() { ... };
+  window.goToMessageOnly = function() { ... };
+  */
 
 
   function renderQueue() {
@@ -897,8 +884,9 @@
   };
 
   document.getElementById('nameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') window.onReserveClick(); });
-  document.getElementById('modalBackdrop').addEventListener('click', (e) => { if (e.target.id === 'modalBackdrop') { closeModal(); pendingName = null; } });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeModal(); pendingName = null; } });
+  // [DEMO] モーダルイベントは無効化
+  // document.getElementById('modalBackdrop').addEventListener('click', ...);
+  // document.addEventListener('keydown', ...);
 </script>
 </body>
 </html>
