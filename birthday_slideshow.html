@@ -2,545 +2,732 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Happy Birthday 🎂</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Happy Birthday — A Letter in Paper Cranes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<!-- Noto Sans JP: highly readable on mobile (replaces thin Shippori Mincho for body) -->
+<!-- Italiana: decorative headings (kept as original) -->
+<!-- Noto Serif JP: elegant serif for captions (replaces Cormorant Garamond) -->
+<link href="https://fonts.googleapis.com/css2?family=Italiana&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@300;400&display=swap" rel="stylesheet">
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root {
+    --cream: #FFF9F0;
+    --pink: #F5C6D0;
+    --pink-deep: #E8A8B8;
+    --pink-darker: #C77B8E;
+    --sky: #B8DCEC;
+    --sky-deep: #8FC4DC;
+    --yellow: #FAE5A0;
+    --yellow-deep: #F0CE6B;
+    --ink: #2C3E50;
+    --ink-soft: #5B6B7F;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body {
-    height: 100%; width: 100%;
-    overflow: hidden;
-    background: #FFFDE8;
-    font-family: 'M PLUS Rounded 1c', sans-serif;
+    width: 100%; height: 100%; overflow: hidden;
+    background: linear-gradient(180deg, #FFF9F0 0%, #FDE9EE 45%, #DCEEF6 100%);
+    /* Changed: Noto Sans JP as main body font (much more readable on mobile) */
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--ink);
     -webkit-font-smoothing: antialiased;
-    user-select: none; -webkit-user-select: none;
   }
 
-  /* ── Animated gradient background ── */
-  #bg {
-    position: fixed; inset: 0; z-index: 0;
-    transition: background 1.0s ease;
-  }
-  .bg-0 { background: linear-gradient(155deg, #FFFDE8 0%, #FEF0A8 38%, #F8D5DC 70%, #FEEFD0 100%); }
-  .bg-1 { background: linear-gradient(160deg, #FEF8D0 0%, #F5C6D0 50%, #B8E0EE 100%); }
-  .bg-2 { background: linear-gradient(155deg, #FFFDE8 0%, #FAE566 40%, #F5C6D0 100%); }
-  .bg-3 { background: linear-gradient(158deg, #F0F9FF 0%, #B8DCEC 42%, #F5C6D0 100%); }
-  .bg-4 { background: linear-gradient(155deg, #FEF8D0 0%, #FFFDE8 42%, #FAE566 100%); }
-  .bg-5 { background: linear-gradient(160deg, #FEF8D0 0%, #FAE566 45%, #F5C6D0 100%); }
-  .bg-close { background: linear-gradient(155deg, #FFFDE8 0%, #FEF0A8 45%, #B8DCEC 100%); }
-
-  /* ── Floating decorations ── */
-  #deco { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
-  .deco-item {
-    position: absolute;
-    font-size: 14px;
-    opacity: 0;
-    animation: floatUp linear infinite;
-    pointer-events: none;
-  }
-  @keyframes floatUp {
-    0%   { opacity: 0; transform: translateY(0) rotate(0deg) scale(0.8); }
-    8%   { opacity: 0.65; }
-    90%  { opacity: 0.55; }
-    100% { opacity: 0; transform: translateY(-110px) rotate(220deg) scale(1.1); }
+  #scene-canvas {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%; z-index: 1;
   }
 
-  /* ── Loading screen ── */
-  #loading {
-    position: fixed; inset: 0; z-index: 100;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 16px;
-    background: linear-gradient(155deg, #FFFDE8 0%, #FEF0A8 38%, #F8D5DC 100%);
+  /* Loading screen */
+  #loading-screen {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(180deg, #FFF9F0 0%, #FDE9EE 45%, #DCEEF6 100%);
+    flex-direction: column; gap: 20px;
   }
-  .loading-icon { font-size: 52px; animation: loadBounce 1.2s ease-in-out infinite; }
-  @keyframes loadBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  .loading-icon {
+    font-family: 'Italiana', serif;
+    font-size: 52px; color: var(--pink-deep);
+    animation: loadPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes loadPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.9)} }
   .loading-text {
-    font-family: 'M PLUS Rounded 1c', sans-serif;
-    font-size: 17px; font-weight: 700;
-    color: #A07008; letter-spacing: 0.12em;
-    animation: loadPulse 1.4s steps(2) infinite;
-  }
-  @keyframes loadPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
-  /* ── Error screen ── */
-  #error-screen {
-    position: fixed; inset: 0; z-index: 100;
-    display: none; flex-direction: column;
-    align-items: center; justify-content: center; gap: 14px;
-    background: #FFFDE8; padding: 32px; text-align: center;
-  }
-  #error-screen .err-icon { font-size: 42px; }
-  #error-screen .err-msg { font-size: 15px; color: #888; line-height: 1.7; }
-  .err-retry {
-    margin-top: 8px; padding: 12px 28px;
-    background: #D4960C; color: #fff; border: none;
-    border-radius: 999px; font-family: 'M PLUS Rounded 1c', sans-serif;
-    font-size: 15px; font-weight: 700; cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 16px; font-weight: 500;
+    color: var(--ink-soft); letter-spacing: 0.3em;
   }
 
-  /* ── Slides container ── */
-  #slides-container {
-    position: fixed; inset: 0; z-index: 2;
-    display: none;
+  /* ---------- Slide overlay ---------- */
+  #slides {
+    position: fixed; inset: 0; z-index: 10; pointer-events: none;
   }
 
-  /* ── Individual slide ── */
   .slide {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;
-    padding: 16px 20px 80px; /* bottom padding for nav bar */
     opacity: 0;
-    transition: opacity 0.45s ease;
+    transition: opacity 1.2s cubic-bezier(.4,0,.2,1);
     pointer-events: none;
+    padding: 4vh 6vw;
     overflow-y: auto;
   }
   .slide.active { opacity: 1; pointer-events: auto; }
 
-  .slide-inner {
-    width: 100%; max-width: 420px;
-    text-align: center;
-    display: flex; flex-direction: column; align-items: center;
-    gap: 0;
-  }
-  .slide.active .slide-inner {
-    animation: contentRise 0.5s ease both 0.15s;
-  }
-  @keyframes contentRise {
-    from { opacity: 0; transform: translateY(18px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+  /* ---------- Title slide ---------- */
+  .title-wrap { text-align: center; transform: translateY(-2vh); }
 
-  /* ────────────────────────── TITLE SLIDE ── */
-  .title-slide { gap: 0; }
-
-  .title-badge {
-    display: inline-block;
-    background: rgba(212, 150, 12, 0.14);
-    border: 1.5px solid rgba(212, 150, 12, 0.4);
-    border-radius: 999px;
-    padding: 5px 18px;
-    font-size: 12px; font-weight: 700;
-    color: #A07008; letter-spacing: 0.2em;
-    margin-bottom: 22px;
+  .title-eyebrow {
+    font-family: 'Italiana', serif;
+    font-size: clamp(13px, 1.6vw, 16px);
+    letter-spacing: 0.5em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 2.4em; padding-left: 0.5em;
+    opacity: 0; animation: fadeUp 1.4s 0.3s forwards;
   }
-
-  .title-big-icon { font-size: 72px; margin-bottom: 18px; line-height: 1; }
 
   .title-main {
-    font-size: clamp(36px, 10vw, 52px);
-    font-weight: 900; line-height: 1.15;
-    color: #2C3E50; margin-bottom: 16px;
-    letter-spacing: -0.01em;
+    font-family: 'Italiana', serif;
+    font-size: clamp(52px, 9vw, 132px);
+    line-height: 0.95; font-weight: 400;
+    color: var(--ink); margin-bottom: 0.1em;
+    opacity: 0; animation: fadeUp 1.6s 0.6s forwards;
   }
-  .title-main .accent { color: #D4960C; }
-
-  .title-name {
-    font-size: clamp(22px, 6vw, 28px); font-weight: 700;
-    color: #4A5568; margin-bottom: 24px;
-    letter-spacing: 0.05em;
+  .title-main .amp {
+    font-style: italic; color: var(--pink-deep);
+    font-family: 'Noto Serif JP', serif; font-weight: 300;
   }
 
-  .title-divider {
-    width: 48px; height: 3px;
-    background: linear-gradient(90deg, #FAE566, #D4960C, #FAE566);
-    border-radius: 2px; margin: 0 auto 22px;
+  .title-jp {
+    /* Changed: Noto Sans JP, larger size for mobile readability */
+    font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
+    font-size: clamp(18px, 2vw, 22px);
+    letter-spacing: 0.35em; color: var(--ink-soft);
+    margin-top: 2.2em; padding-left: 0.35em;
+    opacity: 0; animation: fadeUp 1.4s 1.0s forwards;
   }
 
-  .title-body {
-    font-size: 17px; font-weight: 400;
-    color: #4A5568; line-height: 1.9;
-    margin-bottom: 36px;
+  .title-rule {
+    width: 1px; height: 60px; background: var(--ink);
+    margin: 3em auto 0; opacity: 0;
+    transform-origin: top; animation: drawRule 1.2s 1.4s forwards;
   }
 
-  .title-tap {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    font-size: 13px; font-weight: 700; color: #A07008;
-    letter-spacing: 0.12em;
-    opacity: 0.7; animation: tapPulse 2s ease-in-out infinite;
-  }
-  @keyframes tapPulse { 0%,100%{opacity:.5; transform:translateX(0)} 50%{opacity:1; transform:translateX(5px)} }
-
-  /* ────────────────────────── MESSAGE SLIDE ── */
-  .msg-slide { gap: 0; }
-
-  .msg-counter {
-    font-family: 'Nunito', sans-serif;
-    font-size: 12px; font-weight: 600;
-    color: rgba(74, 85, 104, 0.55);
-    letter-spacing: 0.15em;
-    margin-bottom: 22px;
-    text-transform: uppercase;
+  .title-meta {
+    position: absolute; bottom: 5vh; left: 0; right: 0;
+    display: flex; justify-content: space-between;
+    padding: 0 6vw; font-family: 'Italiana', serif;
+    font-size: 13px; letter-spacing: 0.4em; text-transform: uppercase;
+    color: var(--ink-soft); opacity: 0; animation: fadeUp 1.4s 1.6s forwards;
   }
 
-  /* Photo circle */
-  .photo-circle {
-    width: clamp(110px, 28vw, 140px);
-    height: clamp(110px, 28vw, 140px);
-    border-radius: 50%;
-    overflow: hidden;
-    border: 3.5px solid #D4960C;
-    box-shadow: 0 8px 28px rgba(212, 150, 12, 0.28), 0 2px 8px rgba(44, 62, 80, 0.1);
-    margin-bottom: 20px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, #FEF8D0, #F5C6D0);
-  }
-  .photo-circle img {
-    width: 100%; height: 100%; object-fit: cover; display: block;
-  }
-  .photo-circle .no-img-inner {
-    font-size: clamp(32px, 8vw, 48px); line-height: 1;
+  /* ---------- Memory slides ---------- */
+  .memory {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8vw; align-items: center;
+    width: 100%; max-width: 1200px;
   }
 
-  .msg-from {
-    font-family: 'Nunito', sans-serif;
-    font-size: 12px; font-weight: 600;
-    color: #A07008; letter-spacing: 0.2em;
-    text-transform: uppercase; margin-bottom: 6px;
+  /* ── Mobile: stack vertically (portrait first) ── */
+  @media (max-width: 700px), (max-aspect-ratio: 3/4) {
+    .memory {
+      grid-template-columns: 1fr;
+      gap: 5vw;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 8px 0;
+    }
+    /* Always show photo first on mobile regardless of original order */
+    .memory-photo { order: -1; max-width: 260px; margin: 0 auto; }
+    .memory-text  { order:  1; }
+
+    .slide { padding: 2vh 5vw; overflow-y: auto; align-items: flex-start; padding-top: 6vh; }
+    
+    .memory-number { font-size: 13px; margin-bottom: 1.2em; }
+    .memory-title  { font-size: clamp(22px, 5.5vw, 30px); margin-bottom: 0.8em; line-height: 1.45; }
+    .memory-body   { font-size: clamp(16px, 4vw, 18px); line-height: 2.0; }
+    .photo-caption { font-size: 14px; }
   }
 
-  .msg-name {
-    font-size: clamp(22px, 6.5vw, 30px); font-weight: 900;
-    color: #2C3E50; letter-spacing: 0.04em; margin-bottom: 18px;
-    line-height: 1.2;
+  .memory-photo {
+    aspect-ratio: 4/5; position: relative;
+    transform: rotate(-2deg); transition: transform 0.6s;
+  }
+  .memory:nth-child(even) .memory-photo { transform: rotate(2deg); }
+
+  .photo-frame {
+    position: absolute; inset: 0; background: #fff;
+    padding: 5% 5% 18% 5%;
+    box-shadow: 0 30px 60px -20px rgba(44,62,80,0.25), 0 10px 20px -5px rgba(44,62,80,0.15);
+  }
+  .photo-inner { width: 100%; height: 100%; position: relative; overflow: hidden; }
+  .photo-caption {
+    position: absolute; bottom: 5%; left: 5%; right: 5%; text-align: center;
+    /* Changed: Noto Serif JP instead of Cormorant Garamond */
+    font-family: 'Noto Serif JP', serif; font-style: italic; font-weight: 300;
+    font-size: clamp(14px, 1.2vw, 17px); color: var(--ink-soft); padding-top: 4%;
+  }
+  .photo-inner svg { width: 100%; height: 100%; display: block; }
+
+  .memory-text { max-width: 480px; }
+
+  .memory-number {
+    font-family: 'Italiana', serif; font-size: 13px;
+    letter-spacing: 0.5em; color: var(--ink-soft);
+    margin-bottom: 2em; text-transform: uppercase;
   }
 
-  .msg-rule {
-    width: 40px; height: 2px;
-    background: linear-gradient(90deg, transparent, #D4960C, transparent);
-    border-radius: 2px; margin: 0 auto 20px;
+  .memory-title {
+    /* Changed: Noto Sans JP bold (much more readable on mobile) */
+    font-family: 'Noto Sans JP', sans-serif; font-weight: 700;
+    font-size: clamp(26px, 3.4vw, 44px); line-height: 1.4;
+    color: var(--ink); margin-bottom: 1.2em;
+  }
+  .memory-title .accent { color: var(--pink-deeper, #C77B8E); }
+
+  .memory-divider { width: 40px; height: 1px; background: var(--ink); margin-bottom: 2em; }
+
+  .memory-body {
+    /* Changed: Noto Sans JP, larger + better line height for mobile */
+    font-family: 'Noto Sans JP', sans-serif; font-weight: 400;
+    font-size: clamp(16px, 1.3vw, 18px); line-height: 2.2;
+    color: var(--ink-soft); letter-spacing: 0.04em;
   }
 
-  .msg-body {
-    font-size: clamp(15px, 4.2vw, 18px);
-    font-weight: 400; line-height: 2.1;
-    color: #4A5568;
-    white-space: pre-wrap; word-break: break-word;
-    letter-spacing: 0.04em;
-    /* Card-like container */
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 18px;
-    padding: 18px 20px;
-    box-shadow: 0 4px 16px rgba(44, 62, 80, 0.06);
-    text-align: left;
+  /* ---------- Closing slide ---------- */
+  .closing { text-align: center; max-width: 700px; }
+
+  .closing-mark {
+    font-family: 'Italiana', serif;
+    font-size: clamp(60px, 11vw, 160px); line-height: 1; color: var(--ink);
+  }
+  .closing-mark .heart {
+    color: var(--pink-deep); font-family: 'Noto Serif JP', serif;
+    font-style: italic; font-weight: 300;
+  }
+  .closing-jp {
+    /* Changed: Noto Sans JP for better readability */
+    font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
+    font-size: clamp(20px, 2.2vw, 26px); line-height: 2.2;
+    letter-spacing: 0.2em; color: var(--ink-soft); margin-top: 2em;
+  }
+  .closing-sig {
+    margin-top: 4em; font-family: 'Noto Serif JP', serif;
+    font-style: italic; font-weight: 300;
+    font-size: clamp(14px, 1.2vw, 18px); color: var(--ink-soft);
   }
 
-  /* ────────────────────────── CLOSING SLIDE ── */
-  .closing-slide { gap: 0; }
-
-  .closing-icon { font-size: 62px; margin-bottom: 20px; line-height: 1; }
-
-  .closing-title {
-    font-size: clamp(26px, 7.5vw, 36px); font-weight: 900;
-    color: #2C3E50; line-height: 1.5; margin-bottom: 18px;
-    letter-spacing: 0.02em;
+  /* ---------- Navigation ---------- */
+  #nav {
+    position: fixed; bottom: 4vh; left: 50%; transform: translateX(-50%);
+    z-index: 20; display: flex; align-items: center; gap: 28px;
+    padding: 14px 24px;
+    background: rgba(255, 249, 240, 0.7);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(232, 168, 184, 0.35); border-radius: 100px;
+    box-shadow: 0 12px 32px -8px rgba(44, 62, 80, 0.18);
   }
 
-  .closing-divider {
-    width: 48px; height: 3px;
-    background: linear-gradient(90deg, #FAE566, #D4960C, #FAE566);
-    border-radius: 2px; margin: 0 auto 18px;
-  }
+  #dots { display: flex; gap: 10px; align-items: center; }
 
-  .closing-sub {
-    font-size: 17px; font-weight: 700;
-    color: #A07008; letter-spacing: 0.08em; margin-bottom: 28px;
-  }
-
-  .closing-hearts {
-    font-size: 28px; letter-spacing: 10px; line-height: 1;
-    margin-bottom: 28px;
-  }
-
-  .closing-note {
-    font-size: 14px; color: rgba(74, 85, 104, 0.6);
-    letter-spacing: 0.08em; font-weight: 400;
-  }
-
-  /* ── Navigation tap zones ── */
-  .nav-zone {
-    position: fixed; top: 0; bottom: 64px;
-    width: 50%; z-index: 10; cursor: pointer;
-  }
-  .nav-zone.left  { left: 0; }
-  .nav-zone.right { right: 0; }
-  /* Arrow hints */
-  .nav-arrow {
-    position: fixed; top: 50%;
-    transform: translateY(-50%);
-    z-index: 11; pointer-events: none;
-    font-size: 22px;
-    color: rgba(44, 62, 80, 0.2);
-    transition: color 0.2s, opacity 0.2s;
-    font-weight: 800;
-    font-family: 'Nunito', sans-serif;
-  }
-  .nav-arrow.left  { left: 10px; }
-  .nav-arrow.right { right: 10px; }
-  .nav-arrow.hidden { opacity: 0; }
-
-  /* Flash on tap */
-  .nav-zone:active { background: rgba(212, 150, 12, 0.06); }
-
-  /* ── Bottom bar ── */
-  .bottom-bar {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    height: 64px; z-index: 20;
-    display: flex; align-items: center; justify-content: center;
-    gap: 0; flex-direction: column;
-    background: rgba(255, 253, 232, 0.72);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(212, 150, 12, 0.15);
-  }
-
-  .dots-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
   .dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: rgba(212, 150, 12, 0.28);
-    transition: all 0.3s ease; cursor: pointer;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--pink-deep); opacity: 0.35;
+    cursor: pointer; transition: all 0.3s;
   }
-  .dot.active { background: #D4960C; width: 20px; border-radius: 4px; }
-  .dot:hover  { background: rgba(212, 150, 12, 0.55); }
+  .dot.active { opacity: 1; width: 18px; border-radius: 4px; }
 
-  .counter-text {
-    font-family: 'Nunito', sans-serif;
-    font-size: 11px; font-weight: 600;
-    color: rgba(74, 85, 104, 0.55);
-    letter-spacing: 0.2em; text-transform: uppercase;
+  #counter {
+    font-family: 'Italiana', serif; font-size: 14px;
+    letter-spacing: 0.3em; color: var(--ink-soft);
+    min-width: 56px; text-align: center;
+  }
+  #counter .current { color: var(--ink); }
+
+  #prev, #next {
+    background: transparent; border: 1px solid rgba(232, 168, 184, 0.45);
+    border-radius: 50%; width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-family: 'Italiana', serif; font-size: 18px;
+    color: var(--ink-soft); transition: all 0.2s;
+    min-width: 44px; min-height: 44px; /* mobile tap target */
+  }
+  #prev:hover:not(:disabled), #next:hover:not(:disabled) {
+    background: rgba(245, 198, 208, 0.2); color: var(--ink);
+    border-color: var(--pink-deep);
+  }
+  #prev:disabled, #next:disabled { opacity: 0.25; cursor: not-allowed; }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes drawRule {
+    from { opacity:0; transform:scaleY(0); }
+    to   { opacity:0.4; transform:scaleY(1); }
+  }
+
+  /* Mobile navigation */
+  @media (max-width: 600px) {
+    #nav { bottom: 2.5vh; padding: 12px 18px; gap: 18px; }
+    .dot { width: 5px; height: 5px; }
+    .dot.active { width: 14px; }
+    #prev, #next { width: 38px; height: 38px; font-size: 16px; }
+    #counter { font-size: 13px; min-width: 48px; }
   }
 </style>
 </head>
 <body>
 
-<div id="bg" class="bg-0"></div>
-<div id="deco"></div>
-
-<div id="loading">
-  <div class="loading-icon">🎂</div>
+<!-- Loading screen -->
+<div id="loading-screen">
+  <div class="loading-icon">✿</div>
   <div class="loading-text">読み込み中…</div>
 </div>
 
-<div id="error-screen">
-  <div class="err-icon">⚠️</div>
-  <div class="err-msg" id="errMsg">データを読み込めませんでした</div>
-  <button class="err-retry" onclick="location.reload()">もう一度試す</button>
-</div>
+<canvas id="scene-canvas"></canvas>
 
-<div id="slides-container"></div>
+<div id="slides">
+  <!-- Slide 0: Title (always static) -->
+  <div class="slide active" data-slide="0">
+    <div class="title-wrap">
+      <div class="title-eyebrow">A Letter in Paper Cranes</div>
+      <div class="title-main">Happy<br>Birthday<span class="amp"> &amp;</span></div>
+      <div class="title-jp">とりひめさんへ</div>
+      <div class="title-rule"></div>
+    </div>
+    <div class="title-meta">
+      <span>with love</span>
+      <span>✿</span>
+    </div>
+  </div>
+
+  <!-- Message slides: injected by Firebase module below -->
+
+  <!-- Closing slide (always last) -->
+  <div class="slide" id="slide-closing">
+    <div class="closing">
+      <div class="closing-mark">✿<span class="heart"> ❤ </span>✿</div>
+      <div class="closing-jp">これからも<br>よろしくね</div>
+      <div class="closing-sig">— みんなより —</div>
+    </div>
+  </div>
+</div>
 
 <!-- Navigation -->
-<div class="nav-zone left"  onclick="navigate(-1)" id="navL"></div>
-<div class="nav-zone right" onclick="navigate(1)"  id="navR"></div>
-<div class="nav-arrow left"  id="arrowL">‹</div>
-<div class="nav-arrow right" id="arrowR">›</div>
+<nav id="nav" style="display:none;">
+  <button id="prev">←</button>
+  <div id="dots"></div>
+  <div id="counter"><span class="current">01</span> / <span id="total-count">01</span></div>
+  <button id="next">→</button>
+</nav>
 
-<div class="bottom-bar">
-  <div class="dots-row" id="dotsRow"></div>
-  <div class="counter-text" id="counterText">01 / 01</div>
-</div>
+<!-- ========== THREE.JS BACKGROUND ========== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ── Utility functions ── */
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace('#',''), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function rgbToCss([r,g,b]) { return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`; }
+function lerpRgb(a, b, t) { return a.map((v,i) => v + (b[i]-v) * t); }
+function rgbToHexInt([r,g,b]) { return (Math.round(r)<<16)|(Math.round(g)<<8)|Math.round(b); }
 
+/* ── Scene ── */
+const renderer = new THREE.WebGLRenderer({
+  canvas: document.getElementById('scene-canvas'),
+  antialias: true, alpha: false
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xFFF4E8, 20, 80);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 0, 22);
+camera.lookAt(0, 0, 0);
+
+const PALETTE = {
+  pink:   0xF5C6D0,
+  cream:  0xFFF9F0,
+  sky:    0xB8DCEC,
+  yellow: 0xFAE5A0,
+  ink:    0x2C3E50
+};
+
+/* ── Birds ── */
+function makeBird(orbitParams) {
+  const group = new THREE.Group();
+  const bodyMat = new THREE.MeshBasicMaterial({ color: PALETTE.ink, transparent: true, opacity: 0.72 });
+  const body = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.32, 4), bodyMat);
+  body.rotation.z = Math.PI / 2;
+  group.add(body);
+  const wingMat = new THREE.MeshBasicMaterial({ color: PALETTE.ink, transparent: true, opacity: 0.62, side: THREE.DoubleSide });
+  const wingGeom = new THREE.PlaneGeometry(0.48, 0.14);
+  const wingL = new THREE.Mesh(wingGeom, wingMat);
+  wingL.position.set(0, 0.08, 0);
+  group.add(wingL);
+  const wingR = new THREE.Mesh(wingGeom, wingMat);
+  wingR.position.set(0, -0.08, 0);
+  wingR.rotation.z = Math.PI;
+  group.add(wingR);
+  group.userData.orbit = orbitParams;
+  group.userData.wingL = wingL;
+  group.userData.wingR = wingR;
+  scene.add(group);
+  return group;
+}
+const birds = [
+  makeBird({ radius:8,  radiusY:2.0, yOffset:1.5,  zOffset:-4, speed:0.18, phase:0,    tilt:0.08,  flapSpeed:8,  flapPhase:0,   flapAmp:0.6 }),
+  makeBird({ radius:11, radiusY:1.5, yOffset:-1.0, zOffset:-6, speed:0.12, phase:2.1,  tilt:-0.05, flapSpeed:7,  flapPhase:1.0, flapAmp:0.5 }),
+  makeBird({ radius:6,  radiusY:2.5, yOffset:0.5,  zOffset:-3, speed:0.25, phase:4.2,  tilt:0.06,  flapSpeed:9,  flapPhase:2.0, flapAmp:0.7 }),
+  makeBird({ radius:14, radiusY:1.0, yOffset:-2.0, zOffset:-8, speed:0.09, phase:1.0,  tilt:-0.04, flapSpeed:6,  flapPhase:0.5, flapAmp:0.4 }),
+  makeBird({ radius:9,  radiusY:3.0, yOffset:2.0,  zOffset:-5, speed:0.22, phase:3.5,  tilt:0.10,  flapSpeed:10, flapPhase:1.5, flapAmp:0.8 }),
+];
+
+/* ── Petals ── */
+const petals = [];
+const petalSlotColors = ['#F5C6D0','#FFF9F0','#FAE5A0','#B8DCEC'];
+for (let i = 0; i < 60; i++) {
+  const slot = i % 4;
+  const mat = new THREE.MeshBasicMaterial({
+    color: parseInt(petalSlotColors[slot].replace('#',''), 16),
+    transparent: true, opacity: 0.6 + Math.random() * 0.25, side: THREE.DoubleSide
+  });
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(0.12 + Math.random()*0.18, 0.07 + Math.random()*0.1), mat);
+  p.position.set((Math.random()-0.5)*50, 18 + Math.random()*5, (Math.random()-0.5)*40 - 4);
+  p.rotation.set(Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2);
+  p.userData = {
+    fallSpeed: 0.012 + Math.random()*0.018, baseX: p.position.x,
+    swayFreq: 0.4 + Math.random()*0.6, swayPhase: Math.random()*Math.PI*2,
+    swayAmp: 0.5 + Math.random()*1.5,
+    rotSpeedX: (Math.random()-0.5)*0.02, rotSpeedY: (Math.random()-0.5)*0.02, rotSpeedZ: (Math.random()-0.5)*0.015,
+    paletteSlot: slot, currentRgb: hexToRgb(petalSlotColors[slot]), targetRgb: hexToRgb(petalSlotColors[slot])
+  };
+  scene.add(p); petals.push(p);
+}
+
+/* ── Glows ── */
+const glows = [];
+for (let i = 0; i < 8; i++) {
+  const geom = new THREE.CircleGeometry(2 + Math.random()*3, 32);
+  const mat = new THREE.MeshBasicMaterial({ color: PALETTE.pink, transparent: true, opacity: 0.10 });
+  const g = new THREE.Mesh(geom, mat);
+  g.position.set((Math.random()-0.5)*40, (Math.random()-0.5)*20, -12 - Math.random()*8);
+  g.userData = { paletteSlot: i%3, currentRgb: [245,198,208], targetRgb: [245,198,208] };
+  scene.add(g); glows.push(g);
+}
+
+/* ── Theme system ── */
+const themes = [
+  { bgStops:['#FFF9F0','#FDE9EE','#DCEEF6'], petalColors:['#F5C6D0','#FFF9F0','#E8A8B8','#FAE5A0'], glowColors:['#F5C6D0','#FFF9F0','#FAE5A0'], fog:'#FFF4E8' },
+  { bgStops:['#FFF4D6','#FCDDE0','#FBE9C5'], petalColors:['#FAE5A0','#F5C6D0','#F0CE6B','#FFF9F0'], glowColors:['#FAE5A0','#F5C6D0','#FFF9F0'], fog:'#FFF0CC' },
+  { bgStops:['#C8E2F0','#FBE9C5','#F5C6D0'], petalColors:['#B8DCEC','#FAE5A0','#8FC4DC','#FFF9F0'], glowColors:['#B8DCEC','#FAE5A0','#FFF9F0'], fog:'#DCEEF6' },
+  { bgStops:['#D9E0EB','#E8DCE6','#C9D5E0'], petalColors:['#B8DCEC','#FFF9F0','#E0D4E8','#8FC4DC'], glowColors:['#8FC4DC','#E0D4E8','#FFF9F0'], fog:'#D9E0EB' },
+  { bgStops:['#FCE0E5','#FDF0D8','#FCDDE0'], petalColors:['#F5C6D0','#FAE5A0','#E8A8B8','#FFF9F0'], glowColors:['#F5C6D0','#FAE5A0','#E8A8B8'], fog:'#FCE0E5' },
+  { bgStops:['#FFF9F0','#F5C6D0','#B8DCEC'], petalColors:['#F5C6D0','#B8DCEC','#FAE5A0','#FFF9F0'], glowColors:['#F5C6D0','#B8DCEC','#FAE5A0'], fog:'#FFF4E8' }
+];
+const themeState = {
+  bgStops: themes[0].bgStops.map(hexToRgb),     tBgStops: themes[0].bgStops.map(hexToRgb),
+  petalColors: themes[0].petalColors.map(hexToRgb), tPetalColors: themes[0].petalColors.map(hexToRgb),
+  glowColors: themes[0].glowColors.map(hexToRgb),  tGlowColors: themes[0].glowColors.map(hexToRgb),
+  fog: hexToRgb(themes[0].fog), tFog: hexToRgb(themes[0].fog)
+};
+
+window.applyTheme = function(idx) {
+  const th = themes[Math.min(idx, themes.length - 1)];
+  themeState.tBgStops     = th.bgStops.map(hexToRgb);
+  themeState.tPetalColors = th.petalColors.map(hexToRgb);
+  themeState.tGlowColors  = th.glowColors.map(hexToRgb);
+  themeState.tFog         = hexToRgb(th.fog);
+  petals.forEach(p => { p.userData.targetRgb = themeState.tPetalColors[p.userData.paletteSlot]; });
+  glows.forEach(g => { g.userData.targetRgb = themeState.tGlowColors[g.userData.paletteSlot]; });
+};
+
+function tweenColors(speed) {
+  for (let i = 0; i < 3; i++) themeState.bgStops[i] = lerpRgb(themeState.bgStops[i], themeState.tBgStops[i], speed);
+  themeState.fog = lerpRgb(themeState.fog, themeState.tFog, speed);
+  document.body.style.background =
+    `linear-gradient(180deg, ${rgbToCss(themeState.bgStops[0])} 0%, ${rgbToCss(themeState.bgStops[1])} 45%, ${rgbToCss(themeState.bgStops[2])} 100%)`;
+  scene.fog.color.setHex(rgbToHexInt(themeState.fog));
+  petals.forEach(p => {
+    p.userData.currentRgb = lerpRgb(p.userData.currentRgb, p.userData.targetRgb, speed);
+    p.material.color.setHex(rgbToHexInt(p.userData.currentRgb));
+  });
+  glows.forEach(g => {
+    g.userData.currentRgb = lerpRgb(g.userData.currentRgb, g.userData.targetRgb, speed);
+    g.material.color.setHex(rgbToHexInt(g.userData.currentRgb));
+  });
+}
+
+/* ── Animation ── */
+let targetCameraX = 0, targetCameraY = 0, targetCameraZ = 22;
+let currentCameraX = 0, currentCameraY = 0, currentCameraZ = 22;
+let mouseX = 0, mouseY = 0;
+window.addEventListener('mousemove', (e) => {
+  mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+  mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+});
+const clock = new THREE.Clock();
+
+function animate() {
+  const t = clock.getElapsedTime();
+  clock.getDelta();
+  tweenColors(0.025);
+  currentCameraX += (targetCameraX + mouseX * 1.2 - currentCameraX) * 0.04;
+  currentCameraY += (targetCameraY + mouseY * 0.6 - currentCameraY) * 0.04;
+  currentCameraZ += (targetCameraZ - currentCameraZ) * 0.04;
+  camera.position.set(currentCameraX, currentCameraY, currentCameraZ);
+  camera.lookAt(0, 0, 0);
+
+  birds.forEach(c => {
+    const o = c.userData.orbit;
+    const a = t * o.speed + o.phase;
+    c.position.x = Math.cos(a) * o.radius;
+    c.position.z = Math.sin(a) * o.radius + o.zOffset;
+    c.position.y = Math.sin(a * 0.7) * o.radiusY + o.yOffset;
+    const la = a + 0.1;
+    c.lookAt(Math.cos(la)*o.radius, c.position.y, Math.sin(la)*o.radius + o.zOffset);
+    c.rotateY(Math.PI / 2); c.rotation.z = o.tilt;
+    const flap = Math.sin(t * o.flapSpeed + o.flapPhase) * o.flapAmp;
+    c.userData.wingL.rotation.x = -flap;
+    c.userData.wingR.rotation.x = flap;
+  });
+
+  petals.forEach(p => {
+    const u = p.userData;
+    p.position.y -= u.fallSpeed;
+    p.position.x = u.baseX + Math.sin(t * u.swayFreq + u.swayPhase) * u.swayAmp;
+    p.rotation.x += u.rotSpeedX; p.rotation.y += u.rotSpeedY; p.rotation.z += u.rotSpeedZ;
+    if (p.position.y < -18) {
+      p.position.y = 18 + Math.random()*4;
+      p.position.x = (Math.random()-0.5)*50; u.baseX = p.position.x;
+      p.position.z = (Math.random()-0.5)*40 - 4;
+    }
+  });
+
+  glows.forEach((g, i) => {
+    g.position.x += Math.sin(t * 0.1 + i) * 0.003;
+    g.position.y += Math.cos(t * 0.13 + i) * 0.002;
+  });
+
+  renderer.render(scene, camera); requestAnimationFrame(animate);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ── Navigation (called after slides are injected) ── */
+window.initNavigation = function() {
+  const allSlides = document.querySelectorAll('.slide');
+  const totalSlides = allSlides.length;
+  let currentSlide = 0;
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const counter = document.querySelector('#counter .current');
+  const totalEl = document.getElementById('total-count');
+  const dotsContainer = document.getElementById('dots');
+
+  totalEl.textContent = String(totalSlides).padStart(2,'0');
+
+  for (let i = 0; i < totalSlides; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsContainer.appendChild(d);
+  }
+  const dots = document.querySelectorAll('.dot');
+
+  // Dynamic poses based on total slides
+  const BASE_POSES = [
+    { x:-3, y:0.8,  z:18 }, { x:3,  y:-0.4, z:18 },
+    { x:-2, y:-0.8, z:19 }, { x:2,  y:1.0,  z:18 },
+  ];
+  function slidePose(idx) {
+    if (idx === 0)               return { x:0, y:0, z:22 };
+    if (idx === totalSlides - 1) return { x:0, y:0, z:14 };
+    return BASE_POSES[(idx-1) % BASE_POSES.length];
+  }
+  function slideTheme(idx) {
+    if (idx === 0)               return 0;
+    if (idx === totalSlides - 1) return 5;
+    return 1 + ((idx-1) % 4);
+  }
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= totalSlides) return;
+    allSlides[currentSlide].classList.remove('active');
+    dots[currentSlide].classList.remove('active');
+    currentSlide = idx;
+    allSlides[currentSlide].classList.add('active');
+    dots[currentSlide].classList.add('active');
+    counter.textContent = String(idx+1).padStart(2,'0');
+    const pose = slidePose(idx);
+    targetCameraX = pose.x; targetCameraY = pose.y; targetCameraZ = pose.z;
+    window.applyTheme(slideTheme(idx));
+    prevBtn.disabled = idx === 0;
+    nextBtn.disabled = idx === totalSlides - 1;
+  }
+
+  prevBtn.addEventListener('click', () => goTo(currentSlide - 1));
+  nextBtn.addEventListener('click', () => goTo(currentSlide + 1));
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(currentSlide+1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(currentSlide-1); }
+  });
+  let touchStartX = 0;
+  window.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, {passive:true});
+  window.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 60) goTo(currentSlide + (dx < 0 ? 1 : -1));
+  }, {passive:true});
+  prevBtn.disabled = true;
+  document.getElementById('nav').style.display = 'flex';
+};
+</script>
+
+<!-- ========== FIREBASE: load slides from slideshow_messages ========== -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.firebasestorage.app",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCLvalYsoPBnG40Ca7bpuIsUwNc7Qux9E",
+    authDomain: "queue-tori.firebaseapp.com",
+    projectId: "queue-tori",
+    storageBucket: "queue-tori.firebasestorage.app",
+    messagingSenderId: "608324516122",
+    appId: "1:608324516122:web:f1e511722e96945e9514a3"
+  };
 
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
-// ── Background themes ──
-const BG_THEMES = ['bg-0','bg-1','bg-2','bg-3','bg-4','bg-5'];
-const NO_IMG_EMOJIS = ['🐦','🌸','🌟','🎀','🌼','🦋','🌈','✨'];
-
-// ── Decorative floating items ──
-const DECO_SYMBOLS = ['✦','·','✿','◦','❋','✧','♡'];
-(function spawnDeco() {
-  const c = document.getElementById('deco');
-  for (let i = 0; i < 22; i++) {
-    const el = document.createElement('span');
-    el.className = 'deco-item';
-    el.textContent = DECO_SYMBOLS[i % DECO_SYMBOLS.length];
-    el.style.cssText = `left:${Math.random()*100}%;top:${40 + Math.random()*55}%;`
-      + `font-size:${9 + Math.random()*12}px;`
-      + `color:rgba(${Math.random()>.5?'212,150,12':'245,198,208'},${0.2+Math.random()*0.3});`
-      + `animation-delay:${Math.random()*8}s;animation-duration:${5+Math.random()*5}s;`;
-    c.appendChild(el);
-  }
-})();
-
-// ── Escape HTML ──
-function esc(s) {
+function escH(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// ── Build slides HTML ──
-function buildTitle() {
-  return `<div class="slide active" data-idx="0" data-bg="bg-0">
-    <div class="slide-inner title-slide">
-      <div class="title-badge">Birthday Message</div>
-      <div class="title-big-icon">🎂</div>
-      <div class="title-main">Happy<br><span class="accent">Birthday!</span></div>
-      <div class="title-name">とりひめさんへ</div>
-      <div class="title-divider"></div>
-      <div class="title-body">みんなからのメッセージを<br>お届けします 💛</div>
-      <div class="title-tap">タップして進む →</div>
-    </div>
-  </div>`;
+function decorativeSVG(idx) {
+  const gid = 'dg' + idx;
+  const svgs = [
+    `<svg viewBox="0 0 200 240" preserveAspectRatio="xMidYMid slice">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FAE5A0"/><stop offset="100%" stop-color="#F5C6D0"/></linearGradient></defs>
+      <rect width="200" height="240" fill="url(#${gid})"/>
+      <g transform="translate(100 130)" fill="#2C3E50" opacity="0.78">
+        <path d="M-40,-10 Q-30,-30 0,-25 Q30,-30 40,-10 Q35,0 25,-2 L20,15 L10,5 L0,18 L-10,5 L-20,15 L-25,-2 Q-35,0 -40,-10 Z"/>
+        <circle cx="-2" cy="-22" r="3"/></g>
+      <g fill="#FFF" opacity="0.55"><circle cx="30" cy="40" r="4"/><circle cx="170" cy="60" r="3"/>
+        <circle cx="50" cy="200" r="3"/><circle cx="160" cy="210" r="4"/></g></svg>`,
+    `<svg viewBox="0 0 200 240" preserveAspectRatio="xMidYMid slice">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#C8E2F0"/><stop offset="60%" stop-color="#F5C6D0"/>
+        <stop offset="100%" stop-color="#FAE5A0"/></linearGradient></defs>
+      <rect width="200" height="240" fill="url(#${gid})"/>
+      <rect y="160" width="200" height="80" fill="#8FC4DC" opacity="0.28"/>
+      <circle cx="100" cy="150" r="24" fill="#FAE5A0" opacity="0.88"/>
+      <g fill="none" stroke="#2C3E50" stroke-width="1.5" opacity="0.55">
+        <path d="M60,85 q5,-6 10,0 q5,-6 10,0"/>
+        <path d="M130,70 q4,-5 8,0 q4,-5 8,0"/></g></svg>`,
+    `<svg viewBox="0 0 200 240" preserveAspectRatio="xMidYMid slice">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FFF9F0"/><stop offset="100%" stop-color="#B8DCEC"/></linearGradient></defs>
+      <rect width="200" height="240" fill="url(#${gid})"/>
+      <g transform="translate(70 130)">
+        <g fill="#F5C6D0"><ellipse cx="0" cy="-12" rx="6" ry="9"/><ellipse cx="11" cy="-4" rx="9" ry="6"/>
+          <ellipse cx="7" cy="10" rx="6" ry="9"/><ellipse cx="-7" cy="10" rx="6" ry="9"/>
+          <ellipse cx="-11" cy="-4" rx="9" ry="6"/></g>
+        <circle r="5" fill="#FAE5A0"/></g>
+      <g transform="translate(130 145)">
+        <g fill="#FAE5A0"><ellipse cx="0" cy="-10" rx="5" ry="8"/><ellipse cx="9" cy="-3" rx="8" ry="5"/>
+          <ellipse cx="6" cy="8" rx="5" ry="8"/><ellipse cx="-6" cy="8" rx="5" ry="8"/>
+          <ellipse cx="-9" cy="-3" rx="8" ry="5"/></g>
+        <circle r="4" fill="#F5C6D0"/></g></svg>`,
+    `<svg viewBox="0 0 200 240" preserveAspectRatio="xMidYMid slice">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FCE0E5"/><stop offset="100%" stop-color="#FDF0D8"/></linearGradient></defs>
+      <rect width="200" height="240" fill="url(#${gid})"/>
+      <g fill="#2C3E50" opacity="0.78">
+        <g transform="translate(70 120)"><path d="M0,0 L18,-8 L14,2 L20,4 L8,8 L-2,5 Z"/>
+          <circle cx="14" cy="-6" r="1.8" fill="#FFF"/></g>
+        <g transform="translate(130 120) scale(-1 1)"><path d="M0,0 L18,-8 L14,2 L20,4 L8,8 L-2,5 Z"/>
+          <circle cx="14" cy="-6" r="1.8" fill="#FFF"/></g></g>
+      <path d="M100,105 Q95,99 90,103 Q90,109 100,116 Q110,109 110,103 Q105,99 100,105 Z" fill="#FFF" opacity="0.85"/></svg>`,
+  ];
+  return svgs[idx % svgs.length];
 }
 
-function buildMessage(msg, i, total) {
-  const bg = BG_THEMES[1 + (i % (BG_THEMES.length - 1))];
-  const emoji = NO_IMG_EMOJIS[i % NO_IMG_EMOJIS.length];
-  const photoHtml = msg.imageData
-    ? `<img src="${msg.imageData}" alt="${esc(msg.name)}">`
-    : `<span class="no-img-inner">${emoji}</span>`;
-
-  return `<div class="slide" data-idx="${i+1}" data-bg="${bg}">
-    <div class="slide-inner msg-slide">
-      <div class="msg-counter">No. ${String(i+1).padStart(2,'0')} / ${String(total).padStart(2,'0')}</div>
-      <div class="photo-circle">${photoHtml}</div>
-      <div class="msg-from">from</div>
-      <div class="msg-name">${esc(msg.name)}</div>
-      <div class="msg-rule"></div>
-      <div class="msg-body">${esc(msg.message || '')}</div>
-    </div>
-  </div>`;
-}
-
-function buildClosing(total) {
-  const idx = total + 1;
-  return `<div class="slide" data-idx="${idx}" data-bg="bg-close">
-    <div class="slide-inner closing-slide">
-      <div class="closing-icon">🐦</div>
-      <div class="closing-title">これからも<br>よろしくね！</div>
-      <div class="closing-divider"></div>
-      <div class="closing-sub">— みんなより 💛 —</div>
-      <div class="closing-hearts">💛 💛 💛</div>
-      <div class="closing-note">${total}件のメッセージ、受け取ってね</div>
-    </div>
-  </div>`;
-}
-
-// ── Navigation state ──
-let current   = 0;
-let slides    = [];
-let totalSlides = 0;
-
-function navigate(dir) {
-  const next = current + dir;
-  if (next < 0 || next >= totalSlides) {
-    // Bounce arrow hint
-    const arrow = dir < 0 ? 'arrowL' : 'arrowR';
-    const el = document.getElementById(arrow);
-    el.style.color = 'rgba(212,150,12,0.55)';
-    setTimeout(() => { el.style.color = ''; }, 300);
-    return;
-  }
-  goTo(next);
-}
-
-function goTo(idx) {
-  if (idx === current && slides[idx]?.classList.contains('active')) return;
-  if (slides[current]) slides[current].classList.remove('active');
-  current = idx;
-  if (slides[current]) slides[current].classList.add('active');
-
-  // Background
-  const bg = slides[current]?.dataset.bg || 'bg-0';
-  const bgEl = document.getElementById('bg');
-  bgEl.className = bg;
-
-  // Dots + counter
-  updateDots();
-
-  // Arrow visibility
-  document.getElementById('arrowL').classList.toggle('hidden', idx === 0);
-  document.getElementById('arrowR').classList.toggle('hidden', idx === totalSlides - 1);
-}
-
-function updateDots() {
-  const dots = document.querySelectorAll('.dot');
-  dots.forEach((d, i) => d.classList.toggle('active', i === current));
-  document.getElementById('counterText').textContent =
-    `${String(current+1).padStart(2,'0')} / ${String(totalSlides).padStart(2,'0')}`;
-}
-
-// ── Swipe support ──
-let touchX = 0;
-document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, {passive:true});
-document.addEventListener('touchend', e => {
-  const dx = e.changedTouches[0].clientX - touchX;
-  if (Math.abs(dx) > 55) navigate(dx < 0 ? 1 : -1);
-}, {passive:true});
-
-// ── Keyboard ──
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); navigate(1); }
-  if (e.key === 'ArrowLeft') { e.preventDefault(); navigate(-1); }
-});
-
-// ── Load from Firestore ──
 async function loadSlideshow() {
   try {
     const snap = await getDocs(query(collection(db, 'slideshow_messages'), orderBy('order')));
-    const messages = snap.docs.map(d => d.data());
+    const msgs = snap.docs.map(d => d.data());
 
-    const container = document.getElementById('slides-container');
+    const container = document.getElementById('slides');
+    const closingSlide = document.getElementById('slide-closing');
 
-    if (messages.length === 0) {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('error-screen').style.display = 'flex';
-      document.getElementById('errMsg').textContent = 'まだメッセージが公開されていません。\nエディターから「PUBLISH」してください。';
-      return;
+    if (msgs.length === 0) {
+      // No messages yet: show a placeholder slide
+      const ph = document.createElement('div');
+      ph.className = 'slide';
+      ph.innerHTML = `<div class="title-wrap" style="text-align:center;color:var(--ink-soft);">
+        <div class="title-eyebrow">まだメッセージがありません</div>
+        <div style="font-family:'Noto Sans JP',sans-serif;font-size:16px;margin-top:2em;">
+          エディターから「PUBLISH TO SLIDESHOW」してください
+        </div></div>`;
+      container.insertBefore(ph, closingSlide);
+    } else {
+      msgs.forEach((msg, i) => {
+        const el = document.createElement('div');
+        el.className = 'slide';
+        el.dataset.slide = String(i + 1);
+
+        const isAlt = (i % 2 === 1);
+        const num   = String(i + 1).padStart(2, '0');
+        const total = String(msgs.length).padStart(2, '0');
+        const safeName = escH(msg.name || '');
+        const safeMsg  = escH(msg.message || '');
+
+        const photoHTML = `
+          <div class="memory-photo">
+            <div class="photo-frame">
+              <div class="photo-inner" style="overflow:hidden;">
+                ${msg.imageData
+                  ? `<img src="${msg.imageData}" alt="${safeName}" style="width:100%;height:100%;object-fit:cover;display:block;">`
+                  : decorativeSVG(i)
+                }
+              </div>
+              <div class="photo-caption">— from ${safeName} —</div>
+            </div>
+          </div>`;
+
+        const textHTML = `
+          <div class="memory-text">
+            <div class="memory-number">No. ${num} / ${total}</div>
+            <h2 class="memory-title">${safeName}<span class="accent">より</span></h2>
+            <div class="memory-divider"></div>
+            <p class="memory-body" style="white-space:pre-wrap;">${safeMsg}</p>
+          </div>`;
+
+        el.innerHTML = `<div class="memory">${isAlt ? textHTML + photoHTML : photoHTML + textHTML}</div>`;
+        container.insertBefore(el, closingSlide);
+      });
     }
 
-    // Build HTML
-    let html = buildTitle();
-    messages.forEach((m, i) => { html += buildMessage(m, i, messages.length); });
-    html += buildClosing(messages.length);
-    container.innerHTML = html;
+    // Remove loading screen and init navigation
+    document.getElementById('loading-screen').style.display = 'none';
+    window.initNavigation();
 
-    // Build dots
-    const dotsRow = document.getElementById('dotsRow');
-    const total   = messages.length + 2; // title + msgs + closing
-    const showDots = total <= 12;
-    if (showDots) {
-      for (let i = 0; i < total; i++) {
-        const d = document.createElement('div');
-        d.className = 'dot' + (i === 0 ? ' active' : '');
-        d.addEventListener('click', () => goTo(i));
-        dotsRow.appendChild(d);
-      }
-    }
-
-    slides = Array.from(container.querySelectorAll('.slide'));
-    totalSlides = slides.length;
-
-    updateDots();
-    document.getElementById('arrowL').classList.add('hidden');
-
-    // Show slideshow
-    document.getElementById('loading').style.display = 'none';
-    container.style.display = 'block';
-
-  } catch(err) {
-    console.error(err);
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('error-screen').style.display = 'flex';
-    document.getElementById('errMsg').textContent = `読み込みエラー:\n${err.message}`;
+  } catch (err) {
+    console.error('Slideshow load error:', err);
+    const ls = document.getElementById('loading-screen');
+    ls.querySelector('.loading-icon').textContent = '⚠';
+    ls.querySelector('.loading-text').textContent = '読み込みエラー: ' + err.message;
   }
 }
 
