@@ -459,18 +459,67 @@
 
   /* Responsive */
   @media (max-width: 768px) {
+
+    /* ── Slide: allow vertical scroll when content > viewport ── */
+    .slide {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 6vh;
+      padding-bottom: 90px;   /* clear fixed nav */
+    }
+
+    /* ── Memory: single column ── */
     .memory {
       grid-template-columns: 1fr;
-      gap: 6vh;
+      gap: 4vh;
       max-width: 360px;
+      width: 100%;
     }
+
+    /* ── Photo: explicit size (iOS Safari ignores aspect-ratio in some grid contexts) ── */
     .memory-photo {
-      max-width: 280px;
+      width: min(260px, 78vw);
+      height: calc(min(260px, 78vw) * 1.25);  /* 4:5 ratio */
+      max-width: unset;
+      aspect-ratio: unset;
       margin: 0 auto;
+      flex-shrink: 0;
     }
+    /* Keep the even-row rotation */
+    .memory:nth-child(even) .memory-photo {
+      transform: rotate(2deg);
+    }
+
+    /* Hide desktop-only chrome */
     .title-meta { display: none; }
     #mark { display: none; }
-    #counter { top: 3vh; right: 6vw; }
+
+    /* Counter: stay top-right */
+    #counter { top: 3vh; right: 4vw; }
+    #counter .current { font-size: 18px; }
+
+    /* ── Nav: prevent overflow on narrow screens ── */
+    #nav {
+      gap: 12px;
+      padding: 10px 14px;
+      max-width: calc(100vw - 24px);
+      box-sizing: border-box;
+      bottom: 3vh;
+    }
+
+    /* Smaller dots so many-slide decks fit */
+    #dots { gap: 6px; }
+    .dot { width: 5px; height: 5px; }
+    .dot.active { width: 16px; }
+
+    /* Compact prev/next labels */
+    .nav-btn {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      padding: 4px 6px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
