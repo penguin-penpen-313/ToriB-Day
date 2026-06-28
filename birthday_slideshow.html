@@ -142,7 +142,7 @@
   /* ---------- Memory slides ---------- */
   .memory {
     display: grid;
-    grid-template-columns: 0.75fr 1.25fr;
+    grid-template-columns: 1fr 1fr;
     gap: 8vw;
     align-items: center;
     width: 100%;
@@ -154,6 +154,8 @@
     position: relative;
     transform: rotate(-2deg);
     transition: transform 0.6s;
+    width: 100%;
+    max-width: 380px;    /* uniform cap — both odd and even slides */
   }
 
   .memory:nth-child(even) .memory-photo {
