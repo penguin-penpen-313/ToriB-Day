@@ -322,7 +322,8 @@
     background: var(--ink-soft);
     opacity: 0.3;
     cursor: pointer;
-    transition: all 0.4s;
+    /* Only transition color/opacity — NOT width/border-radius (prevents glitch when navigating) */
+    transition: background-color 0.35s, opacity 0.35s;
   }
 
   .dot.active {
@@ -333,6 +334,8 @@
   }
 
   /* Counter */
+  #counter.hidden { opacity: 0; pointer-events: none; }
+
   #counter {
     position: fixed;
     top: 5vh;
@@ -511,7 +514,7 @@
 
     /* Smaller dots so many-slide decks fit */
     #dots { gap: 6px; }
-    .dot { width: 5px; height: 5px; }
+    .dot { width: 5px; height: 5px; transition: background-color 0.25s, opacity 0.25s; }
     .dot.active { width: 16px; }
 
     /* Compact prev/next labels */
@@ -534,7 +537,7 @@
 <canvas id="scene-canvas"></canvas>
 
 <div id="mark">Origami<span class="glyph"></span>Letter</div>
-<div id="counter"><span class="current">01</span> / <span id="slide-total">--</span></div>
+<div id="counter" class="hidden"><span class="current">01</span> / <span id="slide-total">--</span></div>
 
 <div id="slides">
 
@@ -542,7 +545,7 @@
   <div class="slide active" data-slide="0">
     <div class="title-wrap">
       <div class="title-eyebrow">A Letter to the Princess of the Birds' Kingdom</div>
-      <h1 class="title-main">Happy <em class="amp">&</em><br>Birthday</h1>
+      <h1 class="title-main">Happy<br>Birthday</h1>
       <div class="title-jp">To Royal Highness Princess Torihime<br>と り ひ め さ ん へ</div>
       <div class="title-rule"></div>
     </div>
@@ -1255,6 +1258,10 @@ function goTo(idx) {
 
   prevBtn.disabled = idx === 0;
   nextBtn.disabled = idx === totalSlides - 1;
+
+  // Hide counter on title slide (idx === 0)
+  const counterEl = document.getElementById('counter');
+  if (counterEl) counterEl.classList.toggle('hidden', idx === 0);
 }
 
 prevBtn.addEventListener('click', () => goTo(currentSlide - 1));
