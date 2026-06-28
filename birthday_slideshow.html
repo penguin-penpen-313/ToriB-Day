@@ -142,7 +142,7 @@
   /* ---------- Memory slides ---------- */
   .memory {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 0.75fr 1.25fr;
     gap: 8vw;
     align-items: center;
     width: 100%;
@@ -232,7 +232,7 @@
 
   .memory-body {
     font-family: 'Noto Sans JP', sans-serif;
-    font-size: clamp(14px, 1.1vw, 16px);
+    font-size: clamp(17px, 1.5vw, 20px);
     line-height: 2.0;
     color: var(--ink-soft);
     letter-spacing: 0.04em;
@@ -483,8 +483,8 @@
 
     /* ── Photo: explicit size (iOS Safari ignores aspect-ratio in some grid contexts) ── */
     .memory-photo {
-      width: min(260px, 78vw);
-      height: calc(min(260px, 78vw) * 1.25);  /* 4:5 ratio */
+      width: min(210px, 68vw);
+      height: calc(min(210px, 68vw) * 1.25);  /* 4:5 ratio */
       max-width: unset;
       aspect-ratio: unset;
       margin: 0 auto;
