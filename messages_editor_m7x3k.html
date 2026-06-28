@@ -110,6 +110,25 @@
   .bbtn.dl:disabled{background:var(--bg-3);color:var(--text-mute);box-shadow:none;cursor:not-allowed;}
 
 
+
+  /* Publish button */
+  .tbtn.publish {
+    background: #4AE54A; color: #08080A;
+    box-shadow: 0 0 0 2px var(--bg-1), 0 0 0 3px #4AE54A, 0 0 16px rgba(74,229,74,.4);
+    font-size: 10px;
+  }
+  .tbtn.publish:hover { background: #6cf76c; }
+  .tbtn.publish:disabled { background: var(--bg-3); color: var(--text-mute); box-shadow: none; cursor: not-allowed; }
+
+  .bbtn.publish-main {
+    background: #4AE54A; color: #08080A;
+    box-shadow: 0 0 0 2px var(--bg-1), 0 0 0 3px #4AE54A, 0 0 18px rgba(74,229,74,.4);
+    letter-spacing: .18em;
+    border: none;
+  }
+  .bbtn.publish-main:hover { background: #6cf76c; }
+  .bbtn.publish-main:disabled { background: var(--bg-3); color: var(--text-mute); box-shadow: none; cursor: not-allowed; }
+
   /* Reset all button (danger zone — bottombar) */
   .bbtn.reset-all {
     background: transparent;
@@ -204,7 +223,8 @@
   <div class="topbar-right">
     <a href="panel_m7x3k.html" class="tbtn nav">[ ← PANEL ]</a>
     <button class="tbtn reload" onclick="loadMessages()">↺ RELOAD</button>
-    <button class="tbtn download" id="dlTopBtn" onclick="downloadSlideshow()" disabled>↓ DOWNLOAD SLIDESHOW</button>
+    <button class="tbtn publish" id="pubTopBtn" onclick="publishToSlideshow()" disabled>🌐 PUBLISH SLIDESHOW</button>
+    <button class="tbtn download" id="dlTopBtn" onclick="downloadSlideshow()" disabled>↓ DOWNLOAD</button>
     <button class="tbtn launch" id="launchTopBtn" onclick="launchSlideshow()" disabled>▶ LAUNCH</button>
   </div>
 </div>
@@ -228,7 +248,8 @@
   <span class="hint">// DOWNLOAD SLIDESHOW = データ埋め込み済みHTMLをダウンロード（推奨）</span>
   <button class="bbtn reset-all" onclick="openResetConfirm()">✕ RESET ALL</button>
   <button class="bbtn copy" onclick="copyJSON()">COPY JSON</button>
-  <button class="bbtn dl" id="dlBtn" onclick="downloadSlideshow()" disabled>↓ DOWNLOAD SLIDESHOW</button>
+  <button class="bbtn publish-main" id="pubBtn" onclick="publishToSlideshow()" disabled>🌐 PUBLISH TO SLIDESHOW</button>
+  <button class="bbtn dl" id="dlBtn" onclick="downloadSlideshow()" disabled>↓ DOWNLOAD</button>
 </div>
 
 
@@ -260,7 +281,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, query, orderBy, getDocs, doc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, query, orderBy, getDocs, doc, deleteDoc, writeBatch, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDCLvalYsoPBnG40Ca7bpuIsUwNc7Qux9E",
@@ -334,7 +355,7 @@
     else             { status.textContent = `// ${total} messages ready`; status.className = 'status ok'; }
 
     const canAct = total > 0;
-    ['dlTopBtn','launchTopBtn','dlBtn'].forEach(id => {
+    ['pubTopBtn','dlTopBtn','launchTopBtn','pubBtn','dlBtn'].forEach(id => {
       document.getElementById(id).disabled = !canAct;
     });
 
@@ -471,7 +492,7 @@
     document.getElementById('statTotal').textContent = '--';
     document.getElementById('statImg').textContent   = '--';
     document.getElementById('msgStatus').textContent = '// connecting...';
-    ['dlTopBtn','launchTopBtn','dlBtn'].forEach(id => { document.getElementById(id).disabled = true; });
+    ['pubTopBtn','dlTopBtn','launchTopBtn','pubBtn','dlBtn'].forEach(id => { document.getElementById(id).disabled = true; });
 
     try {
       const snap = await getDocs(query(messagesRef, orderBy('createdAt','asc')));
@@ -557,6 +578,55 @@
       .catch(() => showToast('コピー失敗'));
   };
 
+
+
+  /* ── PUBLISH TO SLIDESHOW → writes to Firestore slideshow_messages ── */
+  window.publishToSlideshow = async function() {
+    syncFromDOM();
+    const data = msgs
+      .map((m, i) => ({
+        order:     i + 1,
+        name:      (m.name    || '').trim() || '名無し',
+        message:   (m.message || '').trim(),
+        imageData: m.imageData || null,
+      }))
+      .filter(m => m.name || m.message);
+
+    if (data.length === 0) { showToast('メッセージがありません'); return; }
+
+    const pubBtn  = document.getElementById('pubBtn');
+    const pubTopBtn = document.getElementById('pubTopBtn');
+    [pubBtn, pubTopBtn].forEach(b => { b.disabled = true; });
+    pubBtn.textContent = '🌐 PUBLISHING...';
+
+    try {
+      const slideshowRef = collection(db, 'slideshow_messages');
+
+      // Delete existing docs
+      const existingSnap = await getDocs(slideshowRef);
+      if (!existingSnap.empty) {
+        const delBatch = writeBatch(db);
+        existingSnap.docs.forEach(d => delBatch.delete(doc(db, 'slideshow_messages', d.id)));
+        await delBatch.commit();
+      }
+
+      // Write new docs (batch)
+      const setBatch = writeBatch(db);
+      data.forEach((item, i) => {
+        const newRef = doc(collection(db, 'slideshow_messages'));
+        setBatch.set(newRef, item);
+      });
+      await setBatch.commit();
+
+      showToast(`${data.length}件をスライドショーに公開しました ✓`, true);
+    } catch(err) {
+      console.error(err);
+      showToast('公開失敗: ' + err.message);
+    } finally {
+      pubBtn.textContent = '🌐 PUBLISH TO SLIDESHOW';
+      [pubBtn, pubTopBtn].forEach(b => { b.disabled = msgs.length === 0; });
+    }
+  };
 
   /* ── RESET ALL messages from Firestore ── */
   window.openResetConfirm = function() {
