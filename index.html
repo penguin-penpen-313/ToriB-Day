@@ -3,902 +3,499 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T.O.R.I. — 順番待ち</title>
+<meta name="robots" content="noindex,nofollow">
+<title>順番待ち</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root {
-    --bg-0: #08080A;
-    --bg-1: #0E1014;
-    --bg-2: #161820;
-    --bg-3: #1F222B;
-    --border: #2A2D34;
-    --border-bright: #3F434E;
-    --amber: #FFA31A;
-    --amber-bright: #FFD93D;
-    --amber-glow: rgba(255, 163, 26, 0.6);
-    --green: #4AE54A;
-    --green-glow: rgba(74, 229, 74, 0.55);
-    --red: #FF3838;
-    --red-glow: rgba(255, 56, 56, 0.6);
-    --text: #E8E6E0;
-    --text-dim: #888B91;
-    --text-mute: #555861;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  html, body {
-    background: var(--bg-0);
-    color: var(--text);
-    font-family: 'DotGothic16', 'VT323', monospace;
-    min-height: 100vh;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-    cursor: default;
-  }
-
-  /* ===== CRT screen effects ===== */
-  body::before {
-    /* Scanlines */
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: repeating-linear-gradient(
-      0deg,
-      rgba(0,0,0,0.16) 0px,
-      rgba(0,0,0,0.16) 1px,
-      transparent 1px,
-      transparent 3px
-    );
-    pointer-events: none;
-    z-index: 9990;
-    mix-blend-mode: multiply;
-  }
-
-  body::after {
-    /* Vignette + faint glow */
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%),
-      radial-gradient(ellipse at 30% 20%, rgba(255,163,26,0.04) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 80%, rgba(74,229,74,0.03) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: 9991;
-  }
-
-  /* Noise overlay */
-  .noise {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 9989;
-    opacity: 0.07;
-    background-image:
-      url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.65'/></svg>");
-    animation: noiseShift 0.6s steps(3) infinite;
-  }
-  @keyframes noiseShift {
-    0%   { transform: translate(0,0); }
-    33%  { transform: translate(-2px, 1px); }
-    66%  { transform: translate(1px, -2px); }
-    100% { transform: translate(0,0); }
-  }
-
-  /* Random glitch flash (rare) */
-  .glitch-flash {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 9992;
-    background: transparent;
-    animation: glitchFlash 11s steps(1) infinite;
-  }
-  @keyframes glitchFlash {
-    0%, 96%, 100% { background: transparent; }
-    96.3% { background: rgba(255,163,26,0.05); transform: translateX(2px); }
-    96.5% { background: transparent; transform: translateX(-3px); }
-    96.7% { background: rgba(74,229,74,0.04); transform: translateX(1px); }
-    96.9% { background: transparent; transform: translateX(0); }
-  }
-
-  /* ===== Page transition (glitch out) ===== */
-  .transition-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
-    background: var(--bg-0);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s steps(2);
-  }
-  .transition-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
-    animation: transitionStatic 0.4s steps(8) forwards;
-  }
-  .transition-overlay::before {
-    content: 'TRANSMITTING...';
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    font-family: 'Press Start 2P', monospace;
-    color: var(--amber);
-    font-size: 14px;
-    letter-spacing: 0.2em;
-    text-shadow: 2px 0 var(--red), -2px 0 var(--green);
-    animation: transmitGlitch 0.1s steps(2) infinite;
-  }
-  @keyframes transmitGlitch {
-    0%, 100% { transform: translate(-50%, -50%); }
-    50% { transform: translate(calc(-50% + 2px), -50%); }
-  }
-  @keyframes transitionStatic {
-    0%   { background: var(--bg-0); }
-    25%  { background: #FFA31A22; }
-    50%  { background: var(--bg-0); }
-    75%  { background: #4AE54A22; }
-    100% { background: var(--bg-0); }
-  }
-
-  /* ===== Page enter (boot up) ===== */
-  @keyframes bootIn {
-    0%   { opacity: 0; transform: translateY(4px) scaleY(0.4); filter: blur(2px); }
-    30%  { opacity: 1; transform: translateY(0) scaleY(1.05); filter: blur(0); }
-    50%  { transform: translateY(0) scaleY(0.97); }
-    100% { opacity: 1; transform: translateY(0) scaleY(1); filter: blur(0); }
-  }
-  @keyframes bootInFast {
-    0%   { opacity: 0; }
-    50%  { opacity: 0; }
-    51%  { opacity: 1; }
-    100% { opacity: 1; }
-  }
-
-  /* ===== Top status bar ===== */
-  .status-bar {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    background: var(--bg-1);
-    border-bottom: 1px solid var(--border);
-    padding: 8px 14px;
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    font-family: 'VT323', monospace;
-    font-size: 16px;
-    color: var(--text-dim);
-    letter-spacing: 0.06em;
-    z-index: 100;
-    user-select: none;
-    animation: bootIn 0.5s steps(6) forwards;
-  }
-
-  .status-bar .item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-  .status-bar .led {
-    width: 8px; height: 8px;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green-glow);
-    animation: ledBlink 2s steps(2) infinite;
-  }
-  .status-bar .led.amber { background: var(--amber); box-shadow: 0 0 6px var(--amber-glow); }
-  @keyframes ledBlink {
-    0%, 80% { opacity: 1; }
-    81%, 100% { opacity: 0.55; }
-  }
-  .status-bar .text-green { color: var(--green); }
-  .status-bar .text-amber { color: var(--amber); }
-  .status-bar .spacer { flex: 1; }
-  .status-bar .lang-tag {
-    border: 1px solid var(--border-bright);
-    padding: 1px 8px;
-    text-decoration: none;
-    color: var(--text);
-    transition: all 0.15s steps(2);
-  }
-  .status-bar .lang-tag:hover { background: var(--amber); color: var(--bg-0); border-color: var(--amber); }
-
-  @media (max-width: 540px) {
-    .status-bar { font-size: 14px; gap: 10px; padding: 7px 10px; }
-    .status-bar .hide-sm { display: none; }
-  }
-
-  /* ===== Main content ===== */
-  .main {
-    max-width: 560px;
+  .page {
+    max-width: 720px;
     margin: 0 auto;
-    padding: 60px 20px 40px;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Boot log */
-  .boot-log {
-    font-family: 'VT323', monospace;
-    font-size: 14px;
-    color: var(--text-dim);
-    line-height: 1.5;
-    margin-bottom: 24px;
-    min-height: 110px;
-  }
-  .boot-log .line { opacity: 0; display: block; }
-  .boot-log .line.show { animation: bootLine 0.05s steps(2) forwards; }
-  .boot-log .line .ok { color: var(--green); }
-  .boot-log .line .warn { color: var(--amber); }
-  .boot-log .line .err { color: var(--red); }
-  @keyframes bootLine {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-  }
-
-  /* Header */
-  .header {
-    text-align: center;
-    margin-bottom: 28px;
-    animation: bootIn 0.7s steps(8) 0.2s both;
-  }
-
-  .header .small-tag {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 9px;
-    letter-spacing: 0.35em;
-    color: var(--amber);
-    margin-bottom: 16px;
-    text-transform: uppercase;
-  }
-
-  .logo {
-    font-family: 'Press Start 2P', monospace;
-    font-size: clamp(22px, 6vw, 36px);
-    color: var(--text);
-    line-height: 1.2;
-    letter-spacing: 0.04em;
-    margin-bottom: 14px;
-    text-shadow:
-      2px 0 var(--red-glow),
-      -2px 0 var(--green-glow);
-    animation: logoBuzz 4s steps(2) infinite;
-  }
-  @keyframes logoBuzz {
-    0%, 96%, 100% { text-shadow: 2px 0 var(--red-glow), -2px 0 var(--green-glow); }
-    96.5% { text-shadow: 4px 0 var(--red-glow), -4px 0 var(--green-glow); transform: translateX(1px); }
-    97% { text-shadow: -2px 0 var(--red-glow), 2px 0 var(--green-glow); }
-    97.5% { transform: translateX(-1px); }
-  }
-  .logo .dot {
-    color: var(--amber);
-    font-size: 0.85em;
-  }
-
-  .subtitle {
-    font-family: 'DotGothic16', monospace;
-    color: var(--text-dim);
-    font-size: 15px;
-    line-height: 1.7;
-    letter-spacing: 0.04em;
-  }
-
-  /* Panel */
-  .panel {
-    background: var(--bg-1);
-    border: 1px solid var(--border);
-    margin-bottom: 14px;
-    position: relative;
-    animation: bootIn 0.6s steps(6) 0.35s both;
-  }
-  .panel-head {
-    background: var(--bg-2);
-    border-bottom: 1px solid var(--border);
-    padding: 7px 14px;
+    padding: 46px 18px 40px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 9px;
-    letter-spacing: 0.2em;
-    color: var(--text-dim);
-    text-transform: uppercase;
+    flex-direction: column;
+    min-height: 100vh;
   }
-  .panel-head::before {
-    content: '▸';
-    color: var(--amber);
-    margin-right: 8px;
-  }
-  .panel-head .led-row { display: flex; gap: 4px; }
-  .panel-head .pix {
-    width: 6px; height: 6px;
-    background: var(--border-bright);
-  }
-  .panel-head .pix.on { background: var(--amber); box-shadow: 0 0 4px var(--amber-glow); }
 
-  .panel-body { padding: 22px 18px 18px; }
+  /* ===== ヘッダー ===== */
+  .head { text-align: center; margin-bottom: 22px; }
 
-  /* Input field — terminal style */
-  .input-group { margin-bottom: 18px; }
-  .input-label {
-    display: block;
-    font-family: 'VT323', monospace;
-    font-size: 16px;
+  .head .kicker { margin-bottom: 10px; display: block; }
+
+  .head h1 {
+    font-family: var(--font-disp);
+    font-size: clamp(24px, 6.4vw, 40px);
+    line-height: 1.25;
+    letter-spacing: 0.02em;
+    background: linear-gradient(100deg, var(--gold) 0%, #fff3c4 35%, var(--lantern) 70%, var(--hanabi-a) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 14px rgba(255,210,74,0.28));
+  }
+
+  .head .sub {
+    margin-top: 8px;
+    font-size: clamp(12px, 3vw, 15px);
+    color: var(--muted);
     letter-spacing: 0.08em;
-    color: var(--amber);
-    margin-bottom: 8px;
-  }
-  .input-label::before {
-    content: '> ';
-    color: var(--green);
   }
 
-  .input-wrap {
-    display: flex;
-    align-items: center;
-    background: var(--bg-0);
-    border: 1px solid var(--border-bright);
-    transition: border-color 0.15s steps(2);
-  }
-  .input-wrap:focus-within {
-    border-color: var(--amber);
-    box-shadow: 0 0 0 1px var(--amber-glow), inset 0 0 12px rgba(255, 163, 26, 0.08);
-  }
-  .input-wrap::before {
-    content: '$';
-    padding: 0 10px;
-    color: var(--green);
-    font-family: 'VT323', monospace;
-    font-size: 22px;
-  }
-  input[type="text"] {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--text);
-    font-family: 'DotGothic16', 'VT323', monospace;
-    font-size: 18px;
-    padding: 12px 12px 12px 0;
-    outline: none;
-    letter-spacing: 0.04em;
-    caret-color: var(--amber);
-  }
-  input[type="text"]::placeholder {
-    color: var(--text-mute);
-    font-family: 'VT323', monospace;
-    font-size: 17px;
-  }
-
-  /* Buttons — pixel style */
-  .btn-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  button, .btn-link {
-    cursor: pointer;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    border: none;
-    padding: 14px 12px;
-    transition: all 0.1s steps(2);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-decoration: none;
-    text-transform: uppercase;
-    line-height: 1.4;
-    position: relative;
-  }
-
-  .btn-primary {
-    background: var(--amber);
-    color: var(--bg-0);
-    grid-column: 1 / -1;
-    padding: 20px 14px;
-    font-size: 17px;
-    letter-spacing: 0.18em;
-    box-shadow:
-      0 0 0 2px var(--bg-0),
-      0 0 0 3px var(--amber),
-      0 0 20px rgba(255, 163, 26, 0.35);
-    position: relative;
-  }
-  .btn-primary::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    background: var(--amber);
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.15s steps(2);
-  }
-  .btn-primary:hover {
-    background: var(--amber-bright);
-    transform: translateY(-1px);
-    box-shadow:
-      0 0 0 2px var(--bg-0),
-      0 0 0 3px var(--amber-bright),
-      0 0 32px rgba(255, 217, 61, 0.55);
-  }
-  .btn-primary:active {
-    transform: translateY(1px);
-  }
-  .btn-primary .arrow {
-    font-family: 'VT323', monospace;
-    font-size: 18px;
-    letter-spacing: 0;
-  }
-
-  .btn-secondary {
-    background: var(--bg-2);
-    color: var(--text);
-    border: 1px solid var(--border-bright);
-  }
-  .btn-secondary:hover {
-    background: var(--bg-3);
-    border-color: var(--amber);
-    color: var(--amber);
-  }
-
-  .btn-message-only {
+  .meta {
     margin-top: 14px;
-    width: 100%;
-    background: transparent;
-    color: var(--green);
-    border: 1px dashed var(--green);
-    font-family: 'Press Start 2P', monospace;
-    font-size: 10px;
-    letter-spacing: 0.15em;
-    padding: 13px 12px;
-  }
-  .btn-message-only:hover {
-    background: rgba(74, 229, 74, 0.08);
-    border-style: solid;
-  }
-  .btn-message-only::before {
-    content: '[ ✉ ]';
-    margin-right: 6px;
-    color: var(--green);
-    letter-spacing: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
-  /* Toast */
-  .toast {
-    position: fixed;
-    bottom: 24px; left: 50%;
-    transform: translate(-50%, 80px);
-    background: var(--bg-0);
-    border: 1px solid var(--amber);
-    color: var(--amber);
-    padding: 12px 22px;
-    font-family: 'DotGothic16', monospace;
-    font-size: 14px;
-    letter-spacing: 0.04em;
-    transition: transform 0.2s steps(4);
-    z-index: 9000;
-    box-shadow: 0 0 24px rgba(255, 163, 26, 0.35), 0 0 0 2px var(--bg-0);
+  .pill {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--gold);
+    background: rgba(255,210,74,0.10);
+    border: 1px solid rgba(255,210,74,0.28);
+    padding: 4px 14px;
+    border-radius: 999px;
     white-space: nowrap;
   }
-  .toast.show { transform: translate(-50%, 0); }
-  .toast.error { border-color: var(--red); color: var(--red); box-shadow: 0 0 24px rgba(255, 56, 56, 0.4), 0 0 0 2px var(--bg-0); }
-  .toast::before {
-    content: '►';
-    margin-right: 8px;
-    color: var(--green);
-  }
-  .toast.error::before { content: '✕'; color: var(--red); }
+  .pill.live { color: var(--hanabi-b); background: rgba(92,225,230,0.08); border-color: rgba(92,225,230,0.3); }
 
-  /* Queue panel (inline) */
-  .queue-panel { display: none; margin-top: 14px; animation: bootIn 0.4s steps(5) both; }
-  .queue-panel.visible { display: block; }
-  .queue-item {
+  .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--hanabi-b);
+    box-shadow: 0 0 10px var(--hanabi-b);
+    margin-right: 6px;
+    animation: pulse 1.8s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+  /* ===== セクション見出し ===== */
+  .sec-label {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 14px;
-    background: var(--bg-2);
-    border: 1px solid var(--border);
-    margin-bottom: 4px;
-    font-family: 'DotGothic16', monospace;
-    font-size: 15px;
-  }
-  .queue-item:first-child {
-    border-color: var(--amber);
-    background: rgba(255, 163, 26, 0.08);
-    box-shadow: inset 0 0 12px rgba(255, 163, 26, 0.08);
-  }
-  .queue-num {
-    font-family: 'Press Start 2P', monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
-    color: var(--text-dim);
-    min-width: 32px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 26px 4px 12px;
   }
-  .queue-item:first-child .queue-num { color: var(--amber); }
-  .queue-name { flex: 1; color: var(--text); }
-  .queue-item:first-child .queue-name::after {
-    content: ' ← NEXT';
-    color: var(--amber);
-    font-family: 'Press Start 2P', monospace;
-    font-size: 8px;
-    letter-spacing: 0.15em;
-    margin-left: 6px;
-  }
-  .empty-state {
-    text-align: center;
-    padding: 22px;
-    font-family: 'VT323', monospace;
-    font-size: 16px;
-    color: var(--text-mute);
-  }
+  .sec-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+  .sec-label b { color: var(--gold); font-weight: 700; letter-spacing: 0.1em; }
 
-  /* ===== MODAL — "INCOMING TRANSMISSION" ===== */
-  .modal-backdrop {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.78);
-    backdrop-filter: blur(3px);
-    z-index: 500;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s steps(2);
-  }
-  .modal-backdrop.show { opacity: 1; pointer-events: auto; }
+  /* ===== NOW カード ===== */
+  #nowSection { display: none; }
+  #nowSection.on { display: block; }
 
-  .modal {
-    background: var(--bg-1);
-    border: 2px solid var(--amber);
-    max-width: 420px;
-    width: 100%;
+  .now-grid { display: grid; gap: 12px; }
+  .now-grid.multi { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+
+  .now-card {
     position: relative;
-    transform: translateY(10px) scale(0.97);
-    transition: transform 0.2s steps(4);
-    box-shadow:
-      0 0 0 4px var(--bg-0),
-      0 0 60px rgba(255, 163, 26, 0.4);
+    border-radius: 20px;
+    padding: 26px 24px;
+    background:
+      radial-gradient(circle at 88% 0%, rgba(255,77,61,0.28) 0%, transparent 62%),
+      linear-gradient(135deg, rgba(255,210,74,0.16), rgba(255,77,61,0.10));
+    border: 1.5px solid rgba(255,210,74,0.5);
+    box-shadow: 0 0 48px rgba(255,140,60,0.22), inset 0 0 40px rgba(255,210,74,0.06);
+    overflow: hidden;
+    animation: popIn .5s cubic-bezier(.2,1.3,.5,1);
   }
-  .modal-backdrop.show .modal { transform: translateY(0) scale(1); }
-
-  /* Flashing top bar */
-  .modal::before {
+  .now-card::after {
     content: '';
     position: absolute;
-    top: -2px; left: -2px; right: -2px;
-    height: 6px;
-    background: var(--amber);
-    animation: warnPulse 0.7s steps(2) infinite;
+    inset: -50% -20% auto auto;
+    width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(255,210,74,0.20) 0%, transparent 70%);
+    pointer-events: none;
+    animation: glow 3.4s ease-in-out infinite;
   }
-  @keyframes warnPulse {
-    0%, 100% { background: var(--amber); box-shadow: 0 0 16px var(--amber-glow); }
-    50% { background: var(--red); box-shadow: 0 0 16px var(--red-glow); }
+  @keyframes glow { 0%,100%{opacity:.6} 50%{opacity:1} }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(.94) translateY(10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
   }
 
-  .modal-header {
-    background: var(--bg-2);
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
+  .now-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: #2a0d05;
+    background: linear-gradient(100deg, var(--gold), #ffb64a);
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .now-tag i { font-style: normal; letter-spacing: 0.05em; font-family: var(--font-jp); }
+
+  .now-name {
+    font-family: var(--font-disp);
+    font-size: clamp(30px, 8.4vw, 58px);
+    line-height: 1.15;
+    color: #fff;
+    text-shadow: 0 0 26px rgba(255,210,74,0.55), 0 0 60px rgba(255,77,61,0.3);
+    word-break: break-word;
+  }
+  .now-name .hon {
+    font-family: var(--font-jp);
+    font-size: 0.36em;
+    font-weight: 500;
+    color: rgba(255,246,229,0.66);
+    margin-left: 6px;
+  }
+
+  /* NOW が複数のときは1枚あたりが狭くなるので文字を小さく */
+  .now-grid.multi .now-card { min-width: 0; padding: 20px 18px; }
+  .now-grid.multi .now-name { font-size: clamp(24px, 4.6vw, 38px); }
+  .now-grid.multi .now-tag  { font-size: 10px; margin-bottom: 9px; }
+
+  /* ===== NEXT カード ===== */
+  .next-card {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 9px;
-    color: var(--amber);
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
+    gap: 20px;
+    border-radius: 20px;
+    padding: 26px 24px;
+    background: linear-gradient(160deg, rgba(21,26,61,0.94), rgba(15,18,45,0.94));
+    border: 1.5px solid rgba(177,140,255,0.4);
+    box-shadow: 0 0 34px rgba(120,90,220,0.16);
+    overflow: hidden;
+    animation: popIn .45s ease;
   }
-  .modal-header .blink {
-    display: inline-block;
-    width: 8px; height: 8px;
-    background: var(--red);
-    box-shadow: 0 0 6px var(--red-glow);
-    animation: ledBlink 0.5s steps(2) infinite;
+  .next-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--hanabi-c), var(--hanabi-b));
   }
 
-  .modal-body {
-    padding: 28px 24px 22px;
+  .next-num {
+    flex-shrink: 0;
+    width: 66px;
     text-align: center;
   }
-
-  .modal-icon {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 38px;
-    color: var(--amber);
-    margin-bottom: 14px;
-    text-shadow: 0 0 16px var(--amber-glow);
-    animation: iconPulse 1.4s steps(2) infinite;
+  .next-num .n {
+    font-family: var(--font-disp);
+    font-size: clamp(38px, 9vw, 54px);
+    line-height: 1;
+    color: var(--hanabi-b);
+    text-shadow: 0 0 24px rgba(92,225,230,0.6);
   }
-  @keyframes iconPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-  }
-
-  .modal-title {
-    font-family: 'DotGothic16', monospace;
-    font-size: 16px;
-    color: var(--text);
-    line-height: 1.8;
-    margin-bottom: 8px;
-    letter-spacing: 0.04em;
-  }
-  .modal-title .name {
-    color: var(--amber);
-    background: rgba(255, 163, 26, 0.12);
-    padding: 0 6px;
-    text-shadow: 0 0 8px var(--amber-glow);
+  .next-num .l {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    color: var(--muted);
+    margin-top: 4px;
   }
 
-  .modal-sub {
-    font-family: 'VT323', monospace;
-    font-size: 15px;
-    color: var(--text-dim);
-    margin-bottom: 22px;
-    letter-spacing: 0.06em;
+  .next-body { flex: 1; min-width: 0; }
+  .next-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    color: var(--hanabi-b);
+    margin-bottom: 6px;
+  }
+  .next-tag i { font-style: normal; color: var(--muted); font-family: var(--font-jp); letter-spacing: .05em; margin-left: 6px; }
+  .next-name {
+    font-family: var(--font-disp);
+    font-size: clamp(24px, 6.6vw, 42px);
+    line-height: 1.2;
+    color: #fff;
+    word-break: break-word;
+  }
+  .next-name .hon {
+    font-family: var(--font-jp);
+    font-size: 0.38em;
+    font-weight: 500;
+    color: rgba(255,246,229,0.6);
+    margin-left: 5px;
   }
 
-  .modal-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .modal-btn {
-    padding: 14px 12px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    cursor: pointer;
-    transition: all 0.1s steps(2);
-    border: none;
-    text-transform: uppercase;
-  }
-  .modal-btn-no {
-    background: var(--bg-2);
-    color: var(--text);
-    border: 1px solid var(--border-bright);
-  }
-  .modal-btn-no:hover { background: var(--bg-3); border-color: var(--text-dim); }
-  .modal-btn-yes {
-    background: var(--amber);
-    color: var(--bg-0);
-    box-shadow: 0 0 0 2px var(--bg-0), 0 0 0 3px var(--amber);
-  }
-  .modal-btn-yes:hover {
-    background: var(--amber-bright);
-    box-shadow: 0 0 0 2px var(--bg-0), 0 0 0 3px var(--amber-bright), 0 0 18px rgba(255, 217, 61, 0.45);
-  }
+  /* NOW がいるときは NEXT を一段控えめに */
+  body.has-now .next-card { padding: 18px 20px; gap: 16px; }
+  body.has-now .next-num { width: 50px; }
+  body.has-now .next-num .n { font-size: clamp(26px, 6vw, 34px); }
+  body.has-now .next-name { font-size: clamp(19px, 4.6vw, 28px); }
 
-  /* Credits */
-  .credits {
-    position: fixed;
-    bottom: 8px; left: 50%;
-    transform: translateX(-50%);
-    font-family: 'VT323', monospace;
-    font-size: 12px;
-    color: var(--text-mute);
-    letter-spacing: 0.18em;
-    pointer-events: none;
-    z-index: 50;
+  /* ===== このあとのリスト ===== */
+  .up-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 16px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.028);
+    border: 1px solid rgba(255,255,255,0.05);
+    animation: fadeUp .35s ease;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  .up-num {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 14px;
+    width: 30px;
+    text-align: center;
+    color: var(--gold);
+    opacity: .8;
+    flex-shrink: 0;
+  }
+  .up-name {
+    font-size: 17px;
+    font-weight: 700;
+    flex: 1;
+    min-width: 0;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: rgba(255,246,229,0.9);
+  }
+  .up-item:nth-child(2) { opacity: .82; }
+  .up-item:nth-child(3) { opacity: .64; }
+  .more-note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 8px 0 0;
+  }
+
+  /* ===== 空状態 ===== */
+  .empty {
+    text-align: center;
+    padding: 54px 20px;
+  }
+  .empty .big {
+    font-family: var(--font-disp);
+    font-size: clamp(26px, 7vw, 42px);
+    color: rgba(255,210,74,0.28);
+    letter-spacing: 0.08em;
+  }
+  .empty .sub { margin-top: 10px; font-size: 14px; color: var(--muted); }
+
+  /* ===== 並び方の案内 ===== */
+  .howto {
+    margin-top: auto;
+    padding: 18px 20px;
+    border-radius: 16px;
+    text-align: center;
+    background: rgba(255,77,61,0.07);
+    border: 1px dashed rgba(255,210,74,0.35);
+  }
+  .howto .t {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .howto .m { font-size: clamp(13px, 3.4vw, 16px); line-height: 1.7; font-weight: 700; }
+  .howto .m b {
+    color: #2a0d05;
+    background: linear-gradient(100deg, var(--gold), #ffb64a);
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-family: var(--font-disp);
+    font-weight: 400;
+    display: inline-block;
+    margin: 0 2px;
   }
 </style>
 </head>
 <body>
 
-<div class="noise"></div>
-<div class="glitch-flash"></div>
-<div class="transition-overlay" id="transitionOverlay"></div>
+<canvas id="fireworks"></canvas>
+<div class="lantern-row" id="lanterns"></div>
 
-<!-- Status bar -->
-<div class="status-bar">
-  <div class="item"><span class="led"></span> <span class="text-green">ONLINE</span></div>
-  <div class="item hide-sm">SYS://QUEUE_v4.0</div>
-  <div class="item hide-sm">NODE:<span class="text-amber">A7</span></div>
-  <div class="spacer"></div>
-  <div class="item"><span id="clockText">--:--:--</span></div>
-  <a href="index_en.html" class="lang-tag" onclick="return navTo(event, 'index_en.html')">[EN]</a>
-</div>
+<div class="page wrap">
 
-<div class="main" style="padding-top:80px;">
-
-  <!-- Boot log -->
-  <div class="boot-log" id="bootLog">
-    <span class="line" data-delay="0">> booting T.O.R.I. system...</span>
-    <span class="line" data-delay="80">> loading firmware......... <span class="ok">[OK]</span></span>
-    <span class="line" data-delay="160">> connecting to server....... <span class="ok">[OK]</span></span>
-    <span class="line" data-delay="240">> birthday_protocol........... <span class="warn">[ACTIVE]</span></span>
-    <span class="line" data-delay="320">> ready_</span>
-  </div>
-
-  <!-- Header -->
-  <div class="header">
-    <div class="small-tag">BIRTHDAY COLLAB RESERVATION SYSTEM</div>
-    <div class="logo">T<span class="dot">.</span>O<span class="dot">.</span>R<span class="dot">.</span>I<span class="dot">.</span></div>
-    <p class="subtitle">お名前を入力して、順番待ちに<br>登録してください</p>
-  </div>
-
-  <!-- Main input panel -->
-  <div class="panel">
-    <div class="panel-head">
-      RESERVATION INPUT
-      <div class="led-row">
-        <span class="pix on"></span>
-        <span class="pix on"></span>
-        <span class="pix on"></span>
-        <span class="pix"></span>
-      </div>
-    </div>
-    <div class="panel-body">
-      <div class="input-group">
-        <label class="input-label" for="nameInput">YOUR NAME (REALITY名)</label>
-        <div class="input-wrap">
-          <input type="text" id="nameInput" placeholder="例：とりひめ" maxlength="20" autocomplete="off" />
-        </div>
-      </div>
-
-      <div class="btn-grid">
-        <button class="btn-primary" onclick="onReserveClick()">
-          <span class="arrow">▶</span> 予約する
-        </button>
-        <button class="btn-secondary" style="grid-column:1/-1;" onclick="navTo(event, 'display.html')">[ DISPLAY QUEUE ]</button>
-      </div>
-
-      <button class="btn-message-only" onclick="goToMessageOnly()">予約せずにメッセージのみ送る</button>
+  <div class="head">
+    <span class="kicker" id="kicker">Summer Festival Queue</span>
+    <h1 id="title">夏祭り 順番待ち</h1>
+    <div class="sub" id="subtitle">花火大会コラボ配信</div>
+    <div class="meta">
+      <span class="pill" id="countPill">—</span>
+      <span class="pill live"><span class="dot"></span><span id="clock">--:--</span></span>
     </div>
   </div>
 
-  <!-- Queue panel -->
-  <div class="queue-panel visible" id="queuePanel">
-    <div class="panel">
-      <div class="panel-head">
-        CURRENT QUEUE [<span id="countBadge">0</span>]
-        <div class="led-row">
-          <span class="pix on"></span><span class="pix"></span><span class="pix"></span>
-        </div>
-      </div>
-      <div id="queueList" style="padding:8px;"></div>
-    </div>
+  <!-- NOW -->
+  <section id="nowSection">
+    <div class="sec-label"><b id="nowLabel">NOW</b> <span id="nowLabelJa">出演中</span></div>
+    <div class="now-grid" id="nowGrid"></div>
+  </section>
+
+  <!-- NEXT / 空状態 -->
+  <section id="nextSection">
+    <div class="sec-label" id="nextSecLabel"><b>NEXT</b> <span>次の方</span></div>
+    <div id="nextArea"></div>
+  </section>
+
+  <!-- このあと -->
+  <section id="upSection" style="display:none">
+    <div class="sec-label" id="upLabel">このあと</div>
+    <div id="upList"></div>
+    <div class="more-note" id="moreNote" style="display:none"></div>
+  </section>
+
+  <!-- 並び方 -->
+  <div class="howto">
+    <div class="t">HOW TO JOIN</div>
+    <div class="m" id="howto"></div>
   </div>
 
 </div>
 
-<!-- INCOMING TRANSMISSION Modal -->
-<div class="modal-backdrop" id="modalBackdrop">
-  <div class="modal">
-    <div class="modal-header">
-      <span><span class="blink"></span>&nbsp;&nbsp;INCOMING TRANSMISSION</span>
-      <span style="color:var(--red);">! PRIORITY !</span>
-    </div>
-    <div class="modal-body">
-      <div class="modal-icon">★</div>
-      <div class="modal-title">
-        本日お誕生日の<br><span class="name">『とりひめさん』</span>に<br>こっそりメッセージを送りませんか？
-      </div>
-      <div class="modal-sub">// SECRET_CHANNEL_OPEN</div>
-      <div class="modal-actions">
-        <button class="modal-btn modal-btn-no" onclick="onModalChoice(false)">[ チェキだけ ]</button>
-        <button class="modal-btn modal-btn-yes" onclick="onModalChoice(true)">[ 送ります ]</button>
-      </div>
-    </div>
-  </div>
-</div>
+<script src="config.js"></script>
+<script src="theme.js"></script>
+<script src="queue-core.js"></script>
+<script>
+(function () {
+  const CFG = window.APP_CONFIG;
+  const { Store, escapeHtml } = window.QueueCore;
+  const L = CFG.labels;
 
-<div class="toast" id="toast"></div>
-<div class="credits">▸▸▸ PRODUCED BY PENPEN ◂◂◂</div>
+  /* --- 固定文言 --- */
+  document.title = CFG.app.title;
+  document.getElementById('title').textContent = CFG.app.title;
+  document.getElementById('subtitle').textContent = CFG.app.subtitle;
+  document.getElementById('nowLabel').textContent = L.now;
+  document.getElementById('nowLabelJa').textContent = L.nowJa;
+  document.getElementById('nextSecLabel').innerHTML =
+    '<b>' + escapeHtml(L.next) + '</b> <span>' + escapeHtml(L.nextJa) + '</span>';
+  document.getElementById('upLabel').textContent = L.upcoming;
+  document.getElementById('howto').innerHTML =
+    escapeHtml(CFG.app.howToJoin).replace(
+      escapeHtml('{keyword}'),
+      '<b>' + escapeHtml(CFG.keywords.join[0]) + '</b>'
+    );
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDCLvalYsoPBnG40Ca7bpuIsUwNc7Qux9E",
-    authDomain: "queue-tori.firebaseapp.com",
-    projectId: "queue-tori",
-    storageBucket: "queue-tori.firebasestorage.app",
-    messagingSenderId: "608324516122",
-    appId: "1:608324516122:web:f1e511722e96945e9514a3"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const queueRef = collection(db, 'queue');
-  let queueData = [];
-  let pendingName = null;
-
-  onSnapshot(query(queueRef, orderBy('order')), (snapshot) => {
-    queueData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderQueue();
-  });
-
-  // ===== Boot log sequence =====
-  document.querySelectorAll('.boot-log .line').forEach((line, i) => {
-    const delay = parseInt(line.dataset.delay || (i * 80), 10);
-    setTimeout(() => line.classList.add('show'), delay);
-  });
-
-  // ===== Clock =====
-  function tick() {
-    const d = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    document.getElementById('clockText').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  /* --- 提灯 --- */
+  const lr = document.getElementById('lanterns');
+  for (let i = 0; i < 9; i++) {
+    const d = document.createElement('div');
+    d.className = 'lantern';
+    d.style.left = (4 + i * 11.5) + '%';
+    d.style.animationDelay = (i * 0.32) + 's';
+    lr.appendChild(d);
   }
-  setInterval(tick, 1000); tick();
 
-  // ===== Page transition =====
-  window.navTo = function(e, url) {
-    if (e) e.preventDefault();
-    const overlay = document.getElementById('transitionOverlay');
-    overlay.classList.add('active');
-    setTimeout(() => { window.location.href = url; }, 380);
-    return false;
-  };
+  /* --- 花火 --- */
+  const fw = window.Fireworks(document.getElementById('fireworks'));
 
-  window.onReserveClick = function() {
-    const input = document.getElementById('nameInput');
-    const name = input.value.trim();
-    if (!name) { showToast('お名前を入力してください', true); input.focus(); return; }
-    if (queueData.find(q => q.name === name)) { showToast(`「${name}」は登録済みです`, true); return; }
-    pendingName = name;
-    openModal();
-  };
+  /* --- 時計 --- */
+  function clock() {
+    const n = new Date();
+    document.getElementById('clock').textContent =
+      String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
+  }
+  clock(); setInterval(clock, 10000);
 
-  window.openModal = function() { document.getElementById('modalBackdrop').classList.add('show'); };
-  window.closeModal = function() { document.getElementById('modalBackdrop').classList.remove('show'); };
+  /* --- 描画 --- */
+  const hon = CFG.app.honorific ? '<span class="hon">' + escapeHtml(CFG.app.honorific) + '</span>' : '';
+  let prevNowKeys = '';
 
-  window.onModalChoice = async function(wantsToSendMessage) {
-    closeModal();
-    if (!pendingName) return;
-    const name = pendingName;
-    pendingName = null;
-    try {
-      const maxOrder = queueData.length > 0 ? Math.max(...queueData.map(d => d.order)) : 0;
-      await addDoc(queueRef, { name, order: maxOrder + 1, createdAt: serverTimestamp() });
-      document.getElementById('nameInput').value = '';
-      if (wantsToSendMessage) {
-        const overlay = document.getElementById('transitionOverlay');
-        overlay.classList.add('active');
-        setTimeout(() => {
-          window.location.href = 'message.html?name=' + encodeURIComponent(name) + '&from=reserve';
-        }, 380);
-      } else {
-        showToast(`「${name}」を登録 [位置: ${queueData.length}]`);
-      }
-    } catch (err) { console.error(err); showToast('登録失敗 [ERR]', true); }
-  };
+  function render(state) {
+    const now = state.now || [];
+    const queue = state.queue || [];
 
-  window.goToMessageOnly = function() {
-    const nameVal = (document.getElementById('nameInput').value || '').trim();
-    const param = nameVal ? '?name=' + encodeURIComponent(nameVal) : '';
-    navTo(null, 'message.html' + param);
-  };
+    document.body.classList.toggle('has-now', now.length > 0);
 
+    document.getElementById('countPill').textContent =
+      queue.length > 0 ? L.waitingCount.replace('{n}', queue.length) : L.waiting + ' 0';
 
-  function renderQueue() {
-    const list = document.getElementById('queueList');
-    document.getElementById('countBadge').textContent = String(queueData.length).padStart(2, '0');
-    if (queueData.length === 0) {
-      list.innerHTML = '<div class="empty-state">// no entries —</div>';
-      return;
+    /* NOW */
+    const nowSec = document.getElementById('nowSection');
+    const nowGrid = document.getElementById('nowGrid');
+    if (now.length > 0) {
+      nowSec.classList.add('on');
+      nowGrid.classList.toggle('multi', now.length > 1);
+      nowGrid.innerHTML = now.map(p => `
+        <div class="now-card">
+          <div class="now-tag">${escapeHtml(L.now)} <i>${escapeHtml(L.nowJa)}</i></div>
+          <div class="now-name">${escapeHtml(p.name)}${hon}</div>
+        </div>`).join('');
+    } else {
+      nowSec.classList.remove('on');
+      nowGrid.innerHTML = '';
     }
-    list.innerHTML = queueData.map((entry, i) => `
-      <div class="queue-item">
-        <span class="queue-num">${i === 0 ? '▶ 01' : String(i + 1).padStart(2, '0')}</span>
-        <span class="queue-name">${escapeHtml(entry.name)}</span>
-      </div>`).join('');
+
+    // NOW の顔ぶれが変わったら花火を打ち上げる
+    const nowKeys = now.map(p => p.id).join(',');
+    if (nowKeys && nowKeys !== prevNowKeys) fw.celebrate();
+    prevNowKeys = nowKeys;
+
+    /* NEXT */
+    const nextArea = document.getElementById('nextArea');
+    const nextSec  = document.getElementById('nextSection');
+    if (queue.length > 0) {
+      nextSec.style.display = '';
+      const p = queue[0];
+      nextArea.innerHTML = `
+        <div class="next-card">
+          <div class="next-num"><div class="n">1</div><div class="l">NO.</div></div>
+          <div class="next-body">
+            <div class="next-tag">${escapeHtml(L.next)}<i>${escapeHtml(L.nextJa)}</i></div>
+            <div class="next-name">${escapeHtml(p.name)}${hon}</div>
+          </div>
+        </div>`;
+    } else if (now.length > 0) {
+      nextSec.style.display = 'none';
+      nextArea.innerHTML = '';
+    } else {
+      nextSec.style.display = '';
+      nextArea.innerHTML = `
+        <div class="empty">
+          <div class="big">${escapeHtml(L.emptyTitle)}</div>
+          <div class="sub">${escapeHtml(L.emptySub)}</div>
+        </div>`;
+    }
+
+    /* このあと */
+    const upSec  = document.getElementById('upSection');
+    const upList = document.getElementById('upList');
+    const note   = document.getElementById('moreNote');
+    const rest   = queue.slice(1);
+    const show   = rest.slice(0, CFG.rules.upcomingCount);
+    if (show.length > 0) {
+      upSec.style.display = '';
+      upList.innerHTML = show.map((p, i) => `
+        <div class="up-item">
+          <span class="up-num">${i + 2}</span>
+          <span class="up-name">${escapeHtml(p.name)}${CFG.app.honorific ? escapeHtml(CFG.app.honorific) : ''}</span>
+        </div>`).join('');
+      const more = rest.length - show.length;
+      note.style.display = more > 0 ? '' : 'none';
+      note.textContent = more > 0 ? `ほか ${more} 名が待機中` : '';
+    } else {
+      upSec.style.display = 'none';
+    }
   }
 
-  function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+  Store.init().onChange(render);
+  render(Store.state);
 
-  window.showToast = function(msg, isError = false) {
-    const toast = document.getElementById('toast');
-    toast.textContent = msg;
-    toast.className = 'toast' + (isError ? ' error' : '') + ' show';
-    setTimeout(() => toast.classList.remove('show'), 3000);
-  };
-
-  document.getElementById('nameInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') window.onReserveClick(); });
-  document.getElementById('modalBackdrop').addEventListener('click', (e) => { if (e.target.id === 'modalBackdrop') { closeModal(); pendingName = null; } });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeModal(); pendingName = null; } });
+  /* --- コメントエンジン ---
+   * 管理パネルもテストページも開いていない場合、この画面が処理役になる。
+   * 優先度は最も低い(1)ので、管理パネルが開けばそちらに譲る。 */
+  window.QueueCore.Engine.start(1);
+})();
 </script>
 </body>
 </html>
